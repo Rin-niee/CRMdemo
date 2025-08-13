@@ -6,8 +6,9 @@ services:
     container_name: crm_django
     restart: unless-stopped
     volumes:
-      - ./db.sqlite3:/app/db.sqlite3
-      - ./media:/app/media
+      - ./db.sqlite3:/app/db.sqlite3:rw
+      - ./media:/app/media:rw
+      - ./static:/app/static:rw
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
     depends_on:
@@ -21,7 +22,8 @@ services:
     restart: unless-stopped
     command: python manage.py python-telegram-bot
     volumes:
-      - ./db.sqlite3:/app/db.sqlite3
+      - ./db.sqlite3:/app/db.sqlite3:rw
+      - ./media:/app/media:rw
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
     networks:
@@ -35,8 +37,8 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./static:/app/static
-      - ./media:/app/media
+      - ./static:/app/static:ro
+      - ./media:/app/media:ro
     depends_on:
       - web
     networks:
