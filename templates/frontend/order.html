@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Информация о заказе</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #f5f5f5;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .card {
+            background: #fff;
+            border: 2px solid #8B0000;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #8B0000;
+        }
+        
+        .card-header h1 {
+            color: #8B0000;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .order-number {
+            background: #8B0000;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h2 {
+            color: #8B0000;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #8B0000;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #8B0000;
+            min-width: 140px;
+        }
+        
+        .info-value {
+            color: #333;
+            text-align: right;
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #8B0000;
+            color: #fff;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid #8B0000;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #fff;
+            color: #8B0000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: #8B0000;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #fff;
+            color: #8B0000;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Информация о заказе</h1>
+                <div class="order-number" id="order-id"></div>
+            </div>
+            
+            <div class="section">
+                <h2>👤 Информация о клиенте</h2>
+                <div class="info-row">
+                    <span class="info-label">Имя:</span>
+                    <span class="info-value" id="client-name"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Телефон:</span>
+                    <span class="info-value" id="client-phone"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Комментарий:</span>
+                    <span class="info-value" id="client-comment"></span>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📋 Детали заказа</h2>
+                <div class="info-row">
+                    <span class="info-label">VIN:</span>
+                    <span class="info-value" id="vin"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Номер заказа:</span>
+                    <span class="info-value" id="number-order"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Номер заявки:</span>
+                    <span class="info-value" id="number-note"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Дата создания:</span>
+                    <span class="info-value" id="created-date"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Текущий статус:</span>
+                    <span class="info-value" id="current-status"></span>
+                </div>
+            </div>
+            
+            <div class="text-center mt-20">
+                <a id="status-link" class="btn btn-primary">📊 Посмотреть статусы заказа</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const pk = window.location.pathname.split('/').filter(Boolean).pop();
+
+        const response = await fetch(`/api/order/${pk}/`);
+        const order = await response.json();
+
+        document.getElementById("order-id").textContent = `Заказ #${order.id}`;
+        document.getElementById("client-name").textContent = order.client.name;
+        document.getElementById("client-phone").textContent = order.client.phone;
+        document.getElementById("client-comment").textContent = order.client.comment || "Не указан";
+
+        document.getElementById("vin").textContent = order.VIN;
+        document.getElementById("number-order").textContent = order.number_order;
+        document.getElementById("number-note").textContent = order.number_note;
+        document.getElementById("created-date").textContent = new Date(order.date).toLocaleDateString();
+        document.getElementById("current-status").textContent = order.status.current_status;
+
+        document.getElementById("status-link").href = `status/`;
+    });
+    </script>
+</body>
+</html> 
