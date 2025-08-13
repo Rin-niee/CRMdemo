@@ -1,29 +1,16 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-# Установка системных зависимостей
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /usr/src/app
 
-# Установка рабочей директории
-WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-# Копирование requirements.txt
-COPY requirements.txt .
+RUN apt-get update
+    
+RUN pip install --upgrade pip
 
-# Установка Python зависимостей
+
+COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование кода приложения
 COPY . .
-
-# Создание пользователя для безопасности
-RUN useradd -m -u 1000 django && chown -R django:django /app
-USER django
-
-# Открытие порта
-EXPOSE 8000
-
-# Команда запуска
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "CRMdemo.wsgi:application"]
