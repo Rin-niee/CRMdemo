@@ -4,10 +4,10 @@ services:
   web:
     build: .
     container_name: crm_django
-    restart: unless-stopped
+    restart: always
     volumes:
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
-      - ./media:/usr/src/app/media:rw
+      - ./staticfiles:/usr/src/app/staticfiles
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
     networks:
@@ -16,11 +16,12 @@ services:
   nginx:
     image: nginx:alpine
     container_name: crm_nginx
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./staticfiles:/usr/src/app/staticfiles
     depends_on:
       - web
     networks:
