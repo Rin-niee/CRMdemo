@@ -307,6 +307,8 @@
 
                         if (response.ok) {
                             alert("Заказ создан!");
+                            // Переход на главную страницу после создания заказа
+                            window.location.href = "/";
                         } else {
                             alert("Ошибка: " + JSON.stringify(result));
                         }

@@ -1,83 +1,91 @@
 from django.contrib import admin
-from .models import Client, Status_orders, Order, TGUsers
+from .models import Client, StatusFile, Status_orders, Order, TGUsers
+
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone', 'comment_preview', 'orders_count')
+    list_display = ('name', 'phone', 'comment', 'id')
     list_filter = ('name',)
     search_fields = ('name', 'phone', 'comment')
-    readonly_fields = ('orders_count',)
-    
-    def comment_preview(self, obj):
-        if obj.comment:
-            return obj.comment[:50] + '...' if len(obj.comment) > 50 else obj.comment
-        return 'Нет комментария'
-    comment_preview.short_description = 'Комментарий'
-    
-    def orders_count(self, obj):
-        return obj.order_set.count()
-    orders_count.short_description = 'Количество заказов'
+    ordering = ('name',)
+    list_per_page = 20
 
-@admin.register(Status_orders)
-class StatusOrdersAdmin(admin.ModelAdmin):
-    list_display = ('id', 'current_status', 'payment_doc', 'parking_doc', 'preparation_doc', 
-                   'bill_of_lading_doc', 'port_transport_doc', 'port_arrival_doc', 'order_received_doc')
-    list_filter = ('current_status',)
-    readonly_fields = ('id',)
+
+@admin.register(StatusFile)
+class StatusFileAdmin(admin.ModelAdmin):
+    list_display = ('doc_type', 'file', 'uploaded_at', 'id')
+    list_filter = ('doc_type', 'uploaded_at')
+    search_fields = ('doc_type',)
+    ordering = ('-uploaded_at',)
+    list_per_page = 20
+    readonly_fields = ('uploaded_at',)
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('id', 'current_status')
+            'fields': ('doc_type', 'file')
         }),
-        ('Документы', {
-            'fields': ('payment_doc', 'parking_doc', 'preparation_doc', 'bill_of_lading_doc', 
-                      'port_transport_doc', 'port_arrival_doc', 'order_received_doc'),
+        ('Метаданные', {
+            'fields': ('uploaded_at',),
             'classes': ('collapse',)
         }),
     )
 
+
+@admin.register(Status_orders)
+class StatusOrdersAdmin(admin.ModelAdmin):
+    list_display = ('id', 'current_status', 'get_files_count')
+    list_filter = ('current_status',)
+    search_fields = ('current_status',)
+    ordering = ('id',)
+    list_per_page = 20
+    filter_horizontal = ('files',)
+    
+    def get_files_count(self, obj):
+        return obj.files.count()
+    get_files_count.short_description = 'Количество файлов'
+    
+    fieldsets = (
+        ('Статус заказа', {
+            'fields': ('current_status',)
+        }),
+        ('Файлы', {
+            'fields': ('files',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'client_name', 'VIN', 'number_order', 'number_note', 'date', 'current_status')
-    list_filter = ('date', 'status__current_status', 'client__name')
-    search_fields = ('VIN', 'number_order', 'number_note', 'client__name', 'client__phone')
-    readonly_fields = ('id', 'date')
-    date_hierarchy = 'date'
-    
-    def client_name(self, obj):
-        return obj.client.name if obj.client else 'Нет клиента'
-    client_name.short_description = 'Клиент'
-    
-    def current_status(self, obj):
-        return obj.status.current_status if obj.status else 'Нет статуса'
-    current_status.short_description = 'Статус'
+    list_display = ('id', 'client', 'VIN', 'number_order', 'number_note', 'date', 'status')
+    list_filter = ('date', 'status__current_status', 'client')
+    search_fields = ('VIN', 'number_order', 'number_note', 'client__name')
+    ordering = ('-date',)
+    list_per_page = 20
+    readonly_fields = ('date',)
     
     fieldsets = (
         ('Основная информация', {
-            'fields': ('id', 'client', 'VIN', 'number_order', 'number_note', 'date')
+            'fields': ('client', 'VIN', 'number_order', 'number_note')
         }),
-        ('Статус', {
-            'fields': ('status',)
+        ('Статус и дата', {
+            'fields': ('status', 'date'),
+            'classes': ('collapse',)
         }),
     )
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('client', 'status')
+    autocomplete_fields = ['client', 'status']
+
 
 @admin.register(TGUsers)
 class TGUsersAdmin(admin.ModelAdmin):
-    list_display = ('id', 'chat_id')
+    list_display = ('chat_id', 'id')
     search_fields = ('chat_id',)
-    readonly_fields = ('id',)
-    ordering = ('id',)
-    
-    fieldsets = (
-        ('Основная информация', {
-            'fields': ('id', 'chat_id')
-        }),
-    )
+    ordering = ('chat_id',)
+    list_per_page = 20
 
-# Настройка админки
+
+# Настройка заголовка админки
 admin.site.site_header = "CRM Demo - Администрирование"
-admin.site.site_title = "CRM Demo Admin"
-admin.site.index_title = "Добро пожаловать в CRM Demo"
+admin.site.site_title = "CRM Demo"
+admin.site.index_title = "Панель управления"

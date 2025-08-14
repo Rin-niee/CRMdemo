@@ -102,46 +102,47 @@
 
     <script>
     document.addEventListener("DOMContentLoaded", async () => {
-        const parts = window.location.pathname.split('/').filter(Boolean);
-        const pk = parts[parts.length - 2];
-        const response = await fetch(`/api/order/${pk}/status/`);
-        const statusData = await response.json();
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const pk = parts[parts.length - 2];
+    const response = await fetch(`/api/order/${pk}/status/`);
+    const statusData = await response.json();
 
-        const container = document.getElementById("statusList");
-        container.innerHTML = "";
+    const container = document.getElementById("statusList");
+    container.innerHTML = "";
 
-        const workflowSteps = [
-            {key: "payment_doc", label: "Оплата"},
-            {key: "parking_doc", label: "Прибытие авто на парковку"},
-            {key: "preparation_doc", label: "Подготовка к экспорту"},
-            {key: "bill_of_lading_doc", label: "Имя для коносамента"},
-            {key: "port_transport_doc", label: "Транспортировка в порт"},
-            {key: "port_arrival_doc", label: "Прибытие в порт"},
-            {key: "order_received_doc", label: "Заказ получен"}
-        ];
+    const workflowSteps = [
+        {key: "payment_doc", label: "Оплата"},
+        {key: "parking_doc", label: "Прибытие авто на парковку"},
+        {key: "preparation_doc", label: "Подготовка к экспорту"},
+        {key: "bill_of_lading_doc", label: "Имя для коносамента"},
+        {key: "port_transport_doc", label: "Транспортировка в порт"},
+        {key: "port_arrival_doc", label: "Прибытие в порт"},
+        {key: "order_received_doc", label: "Заказ получен"}
+    ];
 
-        workflowSteps.forEach(step => {
-            const hasFile = statusData[step.key] !== null && statusData[step.key] !== undefined;
-            const div = document.createElement("div");
-            div.className = "status-item";
+    workflowSteps.forEach(step => {
+        const hasFile = statusData.files.some(f => f.doc_type + '_doc' === step.key);
 
-            const span = document.createElement("span");
-            span.className = "status-name";
-            span.textContent = step.label + (hasFile ? " ✅" : "");
-            div.appendChild(span);
+        const div = document.createElement("div");
+        div.className = "status-item";
 
-            const link = document.createElement("a");
-            link.className = "upload-btn";
-            link.textContent = hasFile ? "Обновить" : "Загрузить";
-            link.href = `/order/${pk}/upload_doc/?doc_type=${step.key}`;
-            div.appendChild(link);
+        const span = document.createElement("span");
+        span.className = "status-name";
+        span.textContent = step.label + (hasFile ? " ✅" : "");
+        div.appendChild(span);
 
-            container.appendChild(div);
-        });
+        const link = document.createElement("a");
+        link.className = "upload-btn";
+        link.textContent = hasFile ? "Обновить" : "Загрузить";
+        link.href = `/order/${pk}/upload_doc/?doc_type=${step.key.replace('_doc','')}`;
+        div.appendChild(link);
 
-        const backBtn = document.getElementById('back-btn');
-        if (backBtn) backBtn.href = `/order/${pk}/`;
+        container.appendChild(div);
     });
+
+    const backBtn = document.getElementById('back-btn');
+    if (backBtn) backBtn.href = `/order/${pk}/`;
+});
     </script>
 </body>
 </html>

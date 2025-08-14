@@ -1,5 +1,4 @@
 from django.shortcuts import render, get_object_or_404
-from demo.models import Order, Client, Status_orders
 
 # Create your views here.
 def create_orders(request):

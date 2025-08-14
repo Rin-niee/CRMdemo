@@ -6,10 +6,17 @@ class ClientSerializer(serializers.ModelSerializer):
         model = Client
         fields = "__all__"
 
+class StatusFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StatusFile
+        fields = ['id', 'file', 'doc_type', 'uploaded_at']
+
 class Status_ordersSerializer(serializers.ModelSerializer):
+    files = StatusFileSerializer(many=True)
+
     class Meta:
         model = Status_orders
-        fields = "__all__"
+        fields = ['id', 'current_status', 'files']
         
 class OrdersSerializer(serializers.ModelSerializer):
     client = ClientSerializer()

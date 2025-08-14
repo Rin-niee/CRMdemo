@@ -5,6 +5,22 @@ class Client(models.Model):
     phone = models.CharField(max_length=15)
     comment = models.TextField(blank=True)
 
+class StatusFile(models.Model):
+    DOC_TYPE_CHOICES = [
+        ("payment", "Оплата"),
+        ("parking", "Прибытие на парковку"),
+        ("preparation", "Подготовка к экспорту"),
+        ("bill_of_lading", "Коносамент"),
+        ("port_transport", "Транспортировка в порт"),
+        ("port_arrival", "Прибытие в порт"),
+        ("order_received", "Заказ получен"),
+    ]
+
+    file = models.FileField(upload_to='docs/%Y/%m/%d/')
+    doc_type = models.CharField(max_length=50, choices=DOC_TYPE_CHOICES)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
 class Status_orders(models.Model):
     STATUS_CHOICES = [
         ("payment", "Оплата"),
@@ -17,17 +33,11 @@ class Status_orders(models.Model):
     ]
 
     current_status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="payment")
-
-    payment_doc = models.FileField(upload_to="docs/payment/", blank=True, null=True)
-    parking_doc = models.FileField(upload_to="docs/parking/", blank=True, null=True)
-    preparation_doc = models.FileField(upload_to="docs/preparation/", blank=True, null=True)
-    bill_of_lading_doc = models.FileField(upload_to="docs/bill_of_lading/", blank=True, null=True)
-    port_transport_doc = models.FileField(upload_to="docs/port_transport/", blank=True, null=True)
-    port_arrival_doc = models.FileField(upload_to="docs/port_arrival/", blank=True, null=True)
-    order_received_doc = models.FileField(upload_to="docs/order_received/", blank=True, null=True)
+    files = models.ManyToManyField(StatusFile, blank=True, related_name='orders')
 
     def __str__(self):
         return f"Order #{self.id} - {self.current_status}"
+
 
 class Order(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
