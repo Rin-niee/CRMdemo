@@ -98,7 +98,10 @@
 </head>
 <body>
     <div class="status-list" id="statusList"></div>
-    <div class="status-back"><a id="back-btn" class="back-btn">← Назад к заказу</a></div>
+    <div class="status-back">
+        <a id="back-btn" class="back-btn">← Назад к заказу</a>
+        <a href="/" class="back-btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; margin-left: 10px;">🏠 На главную</a>
+    </div>
 
     <script>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -122,14 +125,29 @@
 
     workflowSteps.forEach(step => {
         const hasFile = statusData.files.some(f => f.doc_type + '_doc' === step.key);
+        const fileInfo = statusData.files.find(f => f.doc_type + '_doc' === step.key);
 
         const div = document.createElement("div");
         div.className = "status-item";
 
+        // Создаем контейнер для названия и даты
+        const infoContainer = document.createElement("div");
+        infoContainer.style.cssText = "display: flex; flex-direction: column; gap: 5px;";
+
         const span = document.createElement("span");
         span.className = "status-name";
         span.textContent = step.label + (hasFile ? " ✅" : "");
-        div.appendChild(span);
+        infoContainer.appendChild(span);
+
+        // Добавляем дату загрузки под заголовком, если документ загружен
+        if (hasFile && fileInfo && fileInfo.uploaded_at) {
+            const dateSpan = document.createElement("span");
+            dateSpan.style.cssText = "color: #666; font-size: 0.9rem;";
+            dateSpan.textContent = `Загружено: ${new Date(fileInfo.uploaded_at).toLocaleDateString('ru-RU')}`;
+            infoContainer.appendChild(dateSpan);
+        }
+
+        div.appendChild(infoContainer);
 
         const link = document.createElement("a");
         link.className = "upload-btn";

@@ -123,10 +123,6 @@ def send_telegram_message(text):
 
 
 def send_telegram_documents_group(file_objs, caption=None):
-    """
-    file_objs — список объектов StatusFile, уже сохранённых
-    caption — подпись для первого файла
-    """
     for user in TGUsers.objects.all():
         media = []
         files_payload = {}

@@ -82,6 +82,33 @@
             border-color: #8B0000;
         }
         
+        /* Стили для textarea */
+        textarea.file-input {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+        
+        /* Стили для чекбоксов */
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #8B0000;
+        }
+        
+        /* Улучшенные стили для form-group */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8B0000;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
         .btn {
             display: inline-block;
             background: #8B0000;
@@ -155,18 +182,118 @@
             <div class="card-header">
                 <h1>Загрузка документов</h1>
             </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="#" id="backToOrder" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; margin-right: 10px;">📋 Вернуться к заказу</a>
+            </div>
             <form class="upload-form" id="orderForm" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                <input type="file" name="file" id="files" multiple required>
+                <div id="dynamicFields"></div>
+                
                 <div class="file-info">
                 Поддерживаемые форматы: изображения, PDF, Word, Excel
                 </div>
-        </div>
-                <button type="submit" class="btn">📤 Загрузить файлы</button>
             </form>
     </div>
 
 <script>
+// Обработчик для кнопки возвращения к заказу
+document.getElementById('backToOrder').addEventListener('click', function(e) {
+    e.preventDefault();
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const pk = parts[parts.length - 2];
+    if (pk) {
+        window.location.href = `/order/${pk}/`;
+    } else {
+        window.location.href = '/';
+    }
+});
+
+// Функция для создания динамических полей формы
+function createDynamicFields(docType) {
+    const container = document.getElementById('dynamicFields');
+    container.innerHTML = '';
+    
+    const params = new URLSearchParams(window.location.search);
+    const doc_type = params.get('doc_type');
+    
+    if (doc_type === 'payment') {
+        container.innerHTML = `
+            <div class="form-group">
+                <label>Документ 1:</label>
+                <input type="file" name="file1" class="file-input" required>
+            </div>
+            <div class="form-group">
+                <label>Документ 2:</label>
+                <input type="file" name="file2" class="file-input" required>
+            </div>
+            <div class="form-group">
+                <label>Документ 3:</label>
+                <input type="file" name="file3" class="file-input" required>
+            </div>
+            <div class="form-group">
+                <label>Дополнительная информация:</label>
+                <textarea name="text_field" class="file-input" rows="4" placeholder="Введите текст, который будет сохранен как файл"></textarea>
+            </div>
+            <button type="submit" class="btn">📤 Загрузить документы и создать текстовый файл</button>
+        `;
+    } else if (doc_type === 'parking') {
+        container.innerHTML = `
+            <div class="form-group">
+                <label>Документы:</label>
+                <input type="file" name="documents" class="file-input" multiple required>
+            </div>
+            <div class="form-group">
+                <label>Видео:</label>
+                <input type="file" name="video" class="file-input" accept="video/*" required>
+                <div class="file-info" style="margin-top: 5px;">
+                    Поддерживаемые форматы видео: MP4, AVI, MOV, MKV
+                </div>
+            </div>
+            <button type="submit" class="btn">📤 Загрузить документы и видео</button>
+        `;
+    } else if (doc_type === 'order_received') {
+        container.innerHTML = `
+            <div class="form-group">
+                <label>Подтвердите выполнение:</label>
+                <div style="margin-top: 10px;">
+                    <label style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <input type="checkbox" name="checkbox1" style="margin-right: 10px; width: auto;">
+                        <span>Заказ получен клиентом</span>
+                    </label>
+                    <label style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <input type="checkbox" name="checkbox2" style="margin-right: 10px; width: auto;">
+                        <span>Документы подписаны</span>
+                    </label>
+                    <label style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <input type="checkbox" name="checkbox3" style="margin-right: 10px; width: auto;">
+                        <span>Оплата произведена</span>
+                    </label>
+                    <label style="display: flex; align-items: center; margin-bottom: 10px;">
+                        <input type="checkbox" name="checkbox4" style="margin-right: 10px; width: auto;">
+                        <span>Все условия выполнены</span>
+                    </label>
+                </div>
+            </div>
+            <button type="submit" class="btn">✅ Подтвердить выполнение</button>
+        `;
+    } else {
+        container.innerHTML = `
+            <div class="form-group">
+                <label>Файлы:</label>
+                <input type="file" name="file" class="file-input" multiple required>
+            </div>
+            <button type="submit" class="btn">📤 Загрузить файлы</button>
+        `;
+    }
+}
+
+//Поля при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const doc_type = params.get('doc_type');
+    createDynamicFields(doc_type);
+});
+
 document.getElementById('orderForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -182,17 +309,95 @@ document.getElementById('orderForm').addEventListener('submit', async (e) => {
 
     const form = e.target;
     const formData = new FormData(form);
+    const allFiles = [];
+    if (doc_type === 'payment') {
+        const file1 = formData.get('file1');
+        const file2 = formData.get('file2');
+        const file3 = formData.get('file3');
+        const textField = formData.get('text_field');
+        
+        if (file1) allFiles.push(file1);
+        if (file2) allFiles.push(file2);
+        if (file3) allFiles.push(file3);
+        
+        // Создание текстового файла
+        if (textField) {
+            const textBlob = new Blob([textField], { type: 'text/plain' });
+            allFiles.push(new File([textBlob], 'additional_info.txt', { type: 'text/plain' }));
+        }
+        
+    } else if (doc_type === 'parking') {
+        const documents = formData.getAll('documents');
+        const video = formData.get('video');
+        
+        allFiles.push(...documents);
+        if (video) allFiles.push(video);
+        
+    } else if (doc_type === 'order_received') {
+        // Для чекбоксов текстовый файл с информацией о пунктах
+        const checkboxes = {};
+        const selectedItems = [];
+        
+        ['checkbox1', 'checkbox2', 'checkbox3', 'checkbox4'].forEach((name, index) => {
+            const isChecked = formData.get(name) === 'on';
+            checkboxes[name] = isChecked;
+            
+            //Текст выбранных пунктов
+            if (isChecked) {
+                const labels = [
+                    'Заказ получен клиентом',
+                    'Документы подписаны', 
+                    'Оплата произведена',
+                    'Все условия выполнены'
+                ];
+                selectedItems.push(labels[index]);
+            }
+        });
+        const checkboxText = selectedItems.length > 0 
+            ? `Подтвержденные пункты:\n${selectedItems.map(item => `✅ ${item}`).join('\n')}\n\nДата: ${new Date().toLocaleString('ru-RU')}`
+            : `Ни один пункт не выбран\n\nДата: ${new Date().toLocaleString('ru-RU')}`;
+        
+        const checkboxFile = new File([checkboxText], 'status_confirmation.txt', { type: 'text/plain' });
+        allFiles.push(checkboxFile);
+        formData.append('checkboxes', JSON.stringify(checkboxes));
+        
+    } else {
+        const files = formData.getAll('file');
+        allFiles.push(...files);
+    }
+    
+    formData.delete('file1');
+    formData.delete('file2');
+    formData.delete('file3');
+    formData.delete('text_field');
+    formData.delete('documents');
+    formData.delete('video');
+    formData.delete('file');
+
+    allFiles.forEach(file => {
+        formData.append('file', file);
+    });
+
     const response = await fetch(`/api/order/${pk}/upload_doc/?doc_type=${doc_type}`, {
         method: 'POST',
         body: formData
     });
 
+    // Отладочная информация
+    console.log('Отправляемые данные:');
+    for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+    }
+
     const data = await response.json();
     console.log(data);
 
     if (response.ok) {
-        alert('Файлы успешно загружены!');
-        // Перенаправляем на страницу статусов заказа
+        if (doc_type === 'order_received') {
+            alert('Статус заказа подтвержден!');
+        } else {
+            alert('Файлы успешно загружены!');
+        }
         window.location.href = `/order/${pk}/status/`;
     } else {
         alert('Ошибка: ' + JSON.stringify(data));
