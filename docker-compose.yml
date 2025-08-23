@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   web:
@@ -6,12 +6,30 @@ services:
     container_name: crm_django
     restart: always
     volumes:
+      - .:/usr/src/app
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
       - ./staticfiles:/usr/src/app/staticfiles
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+    ports:
+      - "8000:8000"
     networks:
       - crm_network
+
+  bot:
+    build: ./Sewa-motors-bot
+    container_name: crm_bot
+    command: python main.py
+    working_dir: /usr/src/app
+    restart: always
+    env_file: ./Sewa-motors-bot/.env
+    volumes:
+      - ./Sewa-motors-bot:/usr/src/app
+      - ./Sewa-motors-bot/storage:/usr/src/app/storage
+      - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+    networks:
+      - crm_network
+
 
   nginx:
     image: nginx:alpine
@@ -24,18 +42,6 @@ services:
       - ./staticfiles:/usr/src/app/staticfiles
     depends_on:
       - web
-    networks:
-      - crm_network
-
-  telegram_bot:
-    build: .
-    container_name: crm_bot
-    restart: always
-    command: python manage.py python-telegram-bot
-    environment:
-      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
-    volumes:
-      - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
     networks:
       - crm_network
 

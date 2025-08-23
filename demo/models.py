@@ -1,9 +1,57 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+
+class Companies(models.Model):
+    name = models.CharField(max_length=100,verbose_name="Наименование компании")
+    code = models.CharField(max_length=100, blank=True, null=True,verbose_name="Код присоединения к компании")
+    INN = models.CharField(max_length=100, blank=True, null=True,verbose_name="ИНН компании")
+    adress = models.CharField(max_length=255, blank=True, null=True,verbose_name="Юридический адрес")
+    website = models.CharField(max_length=255, blank=True, null=True,verbose_name="Сайт компании")
+    is_approved = models.BooleanField(default=False, verbose_name="Одобрено")
+    class Meta:
+        db_table = "companies"
+        verbose_name = "Компания"
+        verbose_name_plural = "Компании"
+    def __str__(self):
+        return self.name
+    
+class User(AbstractUser):
+    name =  models.CharField(max_length=255, blank=True, null=True, verbose_name="ФИО пользователя")
+    role = models.CharField(max_length=20, default="client", verbose_name="Роль пользователя")
+    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Номер телефона")
+    class Meta:
+        db_table = "user"
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+    def __str__(self):
+        return self.username
+    
+class user_company(models.Model):
+    STATUS_CHOICES = [
+        ('owner', 'Владелец'),
+        ('manager', 'Менеджер'),
+        ('leading_manager', 'Ведущий менеджер'),
+        ('logist', 'Логист'),
+    ]
+    company_id = models.ForeignKey(Companies, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=100, choices=STATUS_CHOICES, default = "manager")
+    def __str__(self):
+        return f"Сompany #{self.company_id} - сотрудник {self.user_id}"
+    class Meta:
+        db_table = "user_company"
+        verbose_name = "Сотрудник компании"
+        verbose_name_plural = "Сотрудники компании"
 
 class Client(models.Model):
     name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15)
     comment = models.TextField(blank=True)
+    class Meta:
+        db_table = "clients"
+        verbose_name = "Клиент"
+        verbose_name_plural = "Клиенты"
 
 class StatusFile(models.Model):
     DOC_TYPE_CHOICES = [
@@ -19,7 +67,10 @@ class StatusFile(models.Model):
     file = models.FileField(upload_to='docs/%Y/%m/%d/')
     doc_type = models.CharField(max_length=50, choices=DOC_TYPE_CHOICES)
     uploaded_at = models.DateTimeField(auto_now_add=True)
-
+    class Meta:
+        db_table = "status_orders_files"
+        verbose_name = "Файл к статусам"
+        verbose_name_plural = "Файлы к статусам"
 
 class Status_orders(models.Model):
     STATUS_CHOICES = [
@@ -37,7 +88,10 @@ class Status_orders(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.current_status}"
-
+    class Meta:
+        db_table = "statuses"
+        verbose_name = "Статус"
+        verbose_name_plural = "Статусы"
 
 class Order(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
@@ -46,7 +100,78 @@ class Order(models.Model):
     number_note = models.CharField(max_length=100)
     date = models.DateField(auto_now_add=True)
     status = models.ForeignKey(Status_orders, on_delete=models.CASCADE)
-
+    class Meta:
+        db_table = "orders"
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
 
 class TGUsers(models.Model):
-    chat_id = models.IntegerField()
+    is_admin = models.BooleanField(default=0)
+    class Meta:
+        db_table = "users"
+        verbose_name = "Менеджер"
+        verbose_name_plural = "Менеджеры"
+    def __str__(self):
+        return self.id
+
+
+class Dealers(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True,verbose_name="Контактное лицо")
+    company_name = models.CharField(max_length=100,  verbose_name="Наименование компании(обязательно)")
+    phone = models.CharField(max_length=100, blank=True, null=True, verbose_name="Телефон компании")
+    address = models.CharField(max_length=100, blank=True, null=True, verbose_name="Адрес компании")
+    photo = models.FileField(upload_to='dealers/%Y/%m/%d/', blank=True)
+    class Meta:
+        db_table = "dealers"
+        verbose_name = "Дилер"
+        verbose_name_plural = "Дилеры"
+    def __str__(self):
+        return self.company_name or "Без названия"
+
+class CarsPhoto(models.Model):
+    photo = models.FileField(upload_to='cars_photos/%Y/%m/%d/', null=True, blank=True)
+    def __str__(self):
+        return f"Photo for Order #{self.order.id}" 
+    class Meta:
+        db_table = "photo"
+        verbose_name = "Фото"
+        verbose_name_plural = "Фото"
+
+#заявка и прочее
+class bid(models.Model):
+    STATUS_CHOICES = [
+        ('disable', 'Disable'),
+        ('open', 'Open'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    company = models.ForeignKey(Companies, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Компания")
+
+    brand = models.CharField(max_length=100, blank=True, null=True, verbose_name="Бренд")
+    model = models.CharField(max_length=100, blank=True, null=True, verbose_name="Модель")
+
+    year= models.IntegerField(blank=True, null=True, verbose_name="Год")
+
+    mileage = models.IntegerField(blank=True, null=True, verbose_name="Пробег")
+    fuel_type = models.CharField(max_length=100, blank=True, null=True, verbose_name="Тип топлива")
+    drive_type = models.CharField(max_length=100, blank=True, null=True, verbose_name="Тип привода")
+
+    engine = models.CharField(max_length=100, blank=True, null=True, verbose_name="Двигатель")
+    power = models.CharField(max_length=100, blank=True, null=True, verbose_name="Мощность двигателя")
+    transmission = models.CharField(max_length=100, blank=True, null=True, verbose_name="Коробка передач")
+
+    photo = models.ManyToManyField(CarsPhoto, blank=True, null=True, verbose_name="Фото")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disable', verbose_name="Статус заявки")
+    manager = models.ForeignKey(TGUsers, on_delete=models.CASCADE, blank=True, null=True)
+    deadline = models.DateTimeField(blank=True, null=True, verbose_name="Исполняющий менеджер")
+    url_users =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Ссылка пользователя")
+    url =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Ссылка менеджера")
+    dealer = models.ForeignKey(Dealers, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Дилер")
+    opened_at = models.DateTimeField(blank=True, null=True)
+    arrived_time = models.DateTimeField(blank=True, null=True)
+    checklist_point1 = models.CharField(max_length=100, null=True, blank=True)
+    checklist_point2 = models.CharField(max_length=100, null=True, blank=True)
+    shown_to_bot = models.BooleanField(default=False, verbose_name="Уведомление боту показано")
+    class Meta:
+        db_table = "bid"
+        verbose_name = "Заявка"
+        verbose_name_plural = "Заявки"

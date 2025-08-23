@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'demo',
     'frontend',
     'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -52,7 +53,24 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
 ROOT_URLCONF = 'CRMdemo.urls'
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",  # если фронт на этом порту
+]
+
+SESSION_COOKIE_HTTPONLY = False 
 
 TEMPLATES = [
     {
@@ -82,7 +100,7 @@ DATABASES = {
     }
 }
 
-
+AUTH_USER_MODEL = "demo.User" 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
