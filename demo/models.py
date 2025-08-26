@@ -17,6 +17,7 @@ class Companies(models.Model):
         return self.name
     
 class User(AbstractUser):
+    email = models.EmailField(unique=True)
     name =  models.CharField(max_length=255, blank=True, null=True, verbose_name="ФИО пользователя")
     role = models.CharField(max_length=20, default="client", verbose_name="Роль пользователя")
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Номер телефона")
@@ -160,11 +161,13 @@ class bid(models.Model):
     transmission = models.CharField(max_length=100, blank=True, null=True, verbose_name="Коробка передач")
 
     photo = models.ManyToManyField(CarsPhoto, blank=True, null=True, verbose_name="Фото")
+    create_at = models.DateTimeField(auto_now_add=True)
+    last_update = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disable', verbose_name="Статус заявки")
     manager = models.ForeignKey(TGUsers, on_delete=models.CASCADE, blank=True, null=True)
     deadline = models.DateTimeField(blank=True, null=True, verbose_name="Исполняющий менеджер")
-    url_users =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Ссылка пользователя")
-    url =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Ссылка менеджера")
+    url_users =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Исходная ссылка на авто")
+    url =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Конечная ссылка на авто")
     dealer = models.ForeignKey(Dealers, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Дилер")
     opened_at = models.DateTimeField(blank=True, null=True)
     arrived_time = models.DateTimeField(blank=True, null=True)

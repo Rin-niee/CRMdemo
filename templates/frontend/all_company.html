@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Все заявки</title>
+    <title>Все компании</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         /* Единый светлый фон и базовая типографика */
         body {
@@ -243,13 +245,14 @@
     
     <div style="font-size: 20px;" class ='headers' >{% if user.is_authenticated %}
         {{ user.username }}</div>
-        <div class = 'header_two'><a href="/bid/all" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
-            <a href="/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заказам</a>
+        <div class = 'header_two'>
+            <!-- <a href="/bid/all" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a> -->
+            <a href="/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
         <button id="logout-btn" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">Выйти</button>
     {% else %}
         Вы не авторизованы
-        <a href="/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заказам</a>
-        <a href="/bid/all" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
+        <a href="/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
+        <!-- <a href="/bid/all" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a> -->
     {% endif %}</div>
 </div>
 

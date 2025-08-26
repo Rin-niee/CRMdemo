@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 #     print(f"[DEBUG] chat_id = {message.chat.id}")
 #     await message.answer(f"chat_id этого чата: {message.chat.id}")
 
-# router = Router()
+router = Router()
 # @router.message()
 # async def get_thread_id(message: types.Message):
 #     if message.message_thread_id:
@@ -102,7 +102,7 @@ async def main():
                     await reminder_open_bids(bot)
                 except Exception:
                     pass
-                await asyncio.sleep(900)
+                await asyncio.sleep(10000)
 
         # Запускаем фоновую задачу для напоминаний
         asyncio.create_task(reminders_loop())

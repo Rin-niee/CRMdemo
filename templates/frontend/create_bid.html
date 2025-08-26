@@ -1,8 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Создать заявку</title>
+    
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         * {
             margin: 0;
@@ -98,7 +101,7 @@
             transform: scale(1.05);
         }
     </style>
-    <script>
+    <!-- <script>
         function toggleForm() {
             const type = document.getElementById('bidType').checked;
             document.getElementById('carForm').style.display = type ? 'block' : 'none';
@@ -107,7 +110,7 @@
         window.onload = function() {
             toggleForm();
         }
-    </script>
+    </script> -->
 </head>
 <body>
     <div class="container">
@@ -116,13 +119,14 @@
                 <h1>Создать заявку</h1>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
-                <a href="/bid/all/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto;">← К списку заявок</a>
+                <a href="/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto;">← К списку заявок</a>
                 <a href="/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto; margin-left: 10px;">🏠 На главную</a>
             </div>
             <div class="toggle-section">
-                <span class="toggle-label">Данные авто</span>
-                <input type="checkbox" id="bidType" onchange="toggleForm()" checked>
-                <span class="toggle-label">Только ссылка</span>
+                <select class="btn" id="bidTypeSelect" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto;" >
+                    <option value="car">Авто</option>
+                    <option value="url">Ссылка</option>
+                </select>
             </div>
             <form id="carForm" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
@@ -176,7 +180,22 @@
                 </div>
                 <button type="submit" class="btn">Отправить заявку</button>
             </form>
-            <script>
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('bidTypeSelect');
+    const carForm = document.getElementById('carForm');
+    const urlForm = document.getElementById('urlForm');
+
+    function toggleForm() {
+        carForm.style.display = select.value === 'car' ? 'block' : 'none';
+        urlForm.style.display = select.value === 'url' ? 'block' : 'none';
+    }
+
+    select.addEventListener('change', toggleForm);
+
+    toggleForm();
+});
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -211,7 +230,7 @@
 
         if (response.ok) {
             alert("Заявка создана!");
-            window.location.href = "/bid/all/";
+            window.location.href = "/";
         } else {
             alert("Ошибка: " + JSON.stringify(result));
         }

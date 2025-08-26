@@ -1,8 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Вход</title>
+    
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         body {
             background: #f5f5f5;
@@ -101,6 +104,7 @@
                 <input type="password" id="password" name="password" placeholder="Пароль" required>
             </div>
             <button type="submit" class="btn">Войти</button>
+            Нет аккаунта?<a href = '/registration'> Зарегистрируйтесь!</a>
         </form>
 <script>
 function getCookie(name) {

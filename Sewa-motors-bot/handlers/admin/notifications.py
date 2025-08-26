@@ -260,12 +260,15 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
 async def reminder_open_bids(bot):
     try:
         open_orders = get_open_orders_older_than(60)
-
+        # logger.info(f"{open_orders}")
+        count = len(open_orders)
         if not open_orders:
             return
 
-        text = "🔔 Внимание! Есть открытые заявки. Пожалуйста, перейдите в раздел 'Заказы на сегодня'."
-
+        text = (
+            f"🔔 Внимание! Есть открытые заявки. Пожалуйста, перейдите в раздел 'Заказы на сегодня'.\n"
+            f"Количество открытых заявок на сегодня: {count}"
+        )
         active_manager_ids = set(get_progress_manager_ids())
         admin_id = config.get_admin_id()
         allowed_users = set(
