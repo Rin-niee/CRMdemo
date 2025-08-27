@@ -99,7 +99,7 @@ async def set_arrival_time(callback: CallbackQuery, state: FSMContext):
     now = datetime.now()
     arrival_time = now + timedelta(minutes=minutes)
     
-    save_arrival_time(order_id, arrival_time, manager_id)
+    save_arrival_time(order_id, arrival_time, manager_id, status='progress')
 
     # убираем кнопки выбора времени
     await callback.message.edit_reply_markup(None)

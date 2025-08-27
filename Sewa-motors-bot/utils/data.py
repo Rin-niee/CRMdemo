@@ -58,6 +58,60 @@ def get_orders_by_company(company_id: int):
         return conn.execute(
             "SELECT * FROM bid WHERE company_id = ?", (company_id,)
         ).fetchall()
+    
+
+def get_thread_information(tg_id: int) -> int | None:
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT inspection_id FROM groups WHERE tg_id = ?",
+            (tg_id,)
+        ).fetchone()
+        if row:
+            return row["inspection_id"]
+        return None
+    
+def get_thread_clients(tg_id: int) -> int | None:
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT clients_id FROM groups WHERE tg_id = ?",
+            (tg_id,)
+        ).fetchone()
+        if row:
+            return row["clients_id"]
+        return None
+
+def get_all_users(manager_id: int) -> int | None:
+    """
+    Возвращает tg_id группы, в которой состоит менеджер
+    """
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT group_id FROM users WHERE id = ? LIMIT 1",
+            (manager_id,)
+        ).fetchone()
+        return row["group_id"] if row else None
+
+def get_manager_group(id: int) -> int | None:
+    """
+    Возвращает tg_id группы, в которой состоит менеджер
+    """
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT tg_id FROM groups WHERE id = ? LIMIT 1",
+            (id,)
+        ).fetchone()
+        return row["tg_id"] if row else None
+
+def get_my_order(id: int) -> int | None:
+    """
+    Возвращает tg_id группы, в которой состоит менеджер
+    """
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT count(id) as cnt FROM bid WHERE status = 'open' and manager_id = ?",
+            (id,)
+        ).fetchone()
+        return row["cnt"] if row else None
 
 
 def get_order_by_id(order_id: int):
@@ -233,6 +287,21 @@ def get_open_orders_with_opened_at():
     with get_db_connection() as conn:
         return conn.execute(
             "SELECT * FROM bid WHERE status = 'open' AND opened_at IS NOT NULL ORDER BY opened_at DESC"
+        ).fetchall()
+    
+
+def get_open_orders_with_opened_at_day():
+    """
+    Получает открытые заказы с временем открытия
+    
+    Возвращает заказы со статусом 'open' и установленным временем открытия
+    
+    Returns:
+        Список открытых заказов с временем открытия
+    """
+    with get_db_connection() as conn:
+        return conn.execute(
+            "SELECT * FROM bid WHERE status = 'open' AND opened_at IS NOT NULL  AND opened_at >= datetime('now', '-1 day') ORDER BY opened_at DESC"
         ).fetchall()
 
 
@@ -491,12 +560,12 @@ def set_checklist_answer_text(order_id: int, q_index: int, value_code: str):
     col = "checklist_point1" if q_index == 1 else "checklist_point2"
     _exec(f"UPDATE bid SET {col} = ? WHERE id = ?", (value_code, order_id))
 
-def save_arrival_time(order_id: int, arrival_time: datetime, manager_id: int):
+def save_arrival_time(order_id: int, arrival_time: datetime, manager_id: int, status: str):
     arrival_time_str = arrival_time.strftime("%Y-%m-%d %H:%M:%S")
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
-            "UPDATE bid SET arrived_time = ?, manager_id = ? WHERE id = ?",
-            (arrival_time_str, manager_id, order_id)
+            "UPDATE bid SET arrived_time = ?, manager_id = ?, status = ? WHERE id = ?",
+            (arrival_time_str, manager_id, status, order_id)
         )
         conn.commit()
     return arrival_time
@@ -512,3 +581,15 @@ def mark_order_as_shown(order_id: int):
         conn.commit()
 
 
+def insert_file_record(bid_id: int, file_path: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO photo (bid_id, file_url)
+            VALUES (?, ?)
+            """,
+            (bid_id, file_path)
+        )
+
+    conn.commit()
+    conn.close()

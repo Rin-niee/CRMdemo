@@ -1,5 +1,9 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from utils.data import get_companies
+from utils.data import (
+    get_companies,
+    get_open_orders_older_than,
+    get_my_order
+    )
 
 
 def get_main_menu_keyboard():
@@ -8,13 +12,16 @@ def get_main_menu_keyboard():
     )
 
 
-def get_help_menu_keyboard() -> InlineKeyboardMarkup:
+def get_help_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    open_orders = get_open_orders_older_than(60)
+    my_orders = get_my_order(user_id)
+    count = len(open_orders)
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="📋 Главное меню", callback_data="select_order"),
-                InlineKeyboardButton(text="📝 Мои заказы", callback_data="my_orders_menu"),
-                InlineKeyboardButton(text="🕧 Мои задачи", callback_data="orderplan_menu"),
+                InlineKeyboardButton(text="📋 Компании", callback_data="select_order"),
+                InlineKeyboardButton(text=f"📝 Мои заявки({my_orders})", callback_data="my_orders_menu"),
+                InlineKeyboardButton(text=f"🕧 Открытые заявки ({count})", callback_data="orderplan_menu"),
             ]
         ]
     )
@@ -64,29 +71,26 @@ def get_orders_with_opened_keyboard(orders: list) -> InlineKeyboardMarkup:
         s = str(val or "")
         return s.split(".")[0]
 
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=f"{o.get('brand','')} {o.get('model','Без названия')} — {_format_opened(o.get('opened_at'))}",
-                    callback_data=f"order_opened_{o['id']}",
-                )
-            ]
-            for o in orders
-        ]
-    )
+    inline_buttons = []
+    for o in orders:
+        text = f"{o.get('brand','')} {o.get('model','Без названия')}" #— {_format_opened(o.get('opened_at'))}
+        if o.get('manager_id'):  # если есть менеджер
+            text += f"— менеджер  {o.get('manager_id')} выехал на съемку" 
+        inline_buttons.append([InlineKeyboardButton(text=text, callback_data=f"order_time_{o.get('id')}")])
+
+    return InlineKeyboardMarkup(inline_keyboard=inline_buttons)
 
 
 def get_order_info_keyboard(context="company"):
     if context == "status":
         return InlineKeyboardMarkup(
             inline_keyboard=[
-                [InlineKeyboardButton(text="📸 Начать съемку", callback_data="start_photo_session")],
+                [InlineKeyboardButton(text="📸 Загрузить осмотр", callback_data="start_photo_session")],
                 [InlineKeyboardButton(text="⬅️ Назад к статусам", callback_data="back_to_status_filter")],
             ]
         )
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="📸 Начать съемку", callback_data="start_photo_session")]]
+        inline_keyboard=[[InlineKeyboardButton(text="📸 Загрузить осмотр", callback_data="start_photo_session")]]
     )
 
 
@@ -138,7 +142,7 @@ def get_back_to_menu_keyboard():
 def get_precheck_decision_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Начать съёмку", callback_data="precheck_start")],
+            [InlineKeyboardButton(text="📸Загрузить осмотр", callback_data="precheck_start")],
             [InlineKeyboardButton(text="🗒 Нужна консультация", callback_data="precheck_need_consult")],
         ]
     )

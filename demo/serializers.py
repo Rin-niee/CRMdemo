@@ -36,9 +36,9 @@ class OrdersSerializer(serializers.ModelSerializer):
 
 
 class BidsSerializer(serializers.ModelSerializer):
-    photo = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=CarsPhoto.objects.all()
-    )
+    # photo = serializers.PrimaryKeyRelatedField(
+    #     many=True, queryset=CarsPhoto.objects.all()
+    # )
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), required=False
     )
@@ -53,7 +53,7 @@ class BidsSerializer(serializers.ModelSerializer):
         return obj.user.username if obj.user else None
 
     def create(self, validated_data):
-        photos_data = validated_data.pop('photo', [])
+        # photos_data = validated_data.pop('photo', [])
         user = validated_data.get('user') or self.context['request'].user
         validated_data['user'] = user
         user_comp = user_company.objects.filter(user_id=user).first()
@@ -67,7 +67,7 @@ class BidsSerializer(serializers.ModelSerializer):
         # validated_data['status'] = 'open'
         # validated_data['opened_at'] = timezone.now()
         bid_obj = bid.objects.create(**validated_data)
-        bid_obj.photo.set(photos_data)
+        # bid_obj.photo.set(photos_data)
         return bid_obj
 
 

@@ -186,7 +186,7 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         buttons.append(
             [
                 InlineKeyboardButton(
-                    text="📸 Начать съемку", callback_data="start_photo_session"
+                    text="✅Прибыл на место", callback_data="start_photo_session"
                 )
             ]
         )

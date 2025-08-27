@@ -11,7 +11,8 @@ class OrderStates(StatesGroup):
     
     # Состояния предварительной проверки
     precheck_decision = State()        # Выбор решения: начать осмотр или запросить консультацию
-    precheck_wait_manager = State()    # Ожидание ответа от главного менеджера
+    precheck_wait_manager = State() 
+    precheck_wait_video = State()    # Ожидание ответа от главного менеджера
     precheck_video = State()           # Загрузка видео для консультации
     precheck_wait_customer = State()   # Ожидание решения заказчика
     precheck_chat = State()            # Чат с заказчиком

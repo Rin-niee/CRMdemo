@@ -20,14 +20,14 @@ os.makedirs(STORAGE_PATH, exist_ok=True)
 # Глобальные переменные для хранения ролей пользователей
 _ADMIN_ID = None        # ID администратора
 _ALLOWED_USERS = []     # Список разрешенных пользователей
-
+_ALLOWED_GROUPS = []     # Список разрешенных пользователей
 
 def load_roles_from_db():
     """
     Загружает роли пользователей из базы данных
     Обновляет глобальные переменные _ADMIN_ID и _ALLOWED_USERS
     """
-    global _ADMIN_ID, _ALLOWED_USERS
+    global _ADMIN_ID, _ALLOWED_USERS, _ALLOWED_GROUPS
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -41,11 +41,16 @@ def load_roles_from_db():
         cursor.execute("SELECT id FROM users")
         _ALLOWED_USERS = [r[0] for r in cursor.fetchall()]
 
+        # Получаем список всех разрешенных групп
+        cursor.execute("SELECT tg_id FROM groups")
+        _ALLOWED_GROUPS = [r[0] for r in cursor.fetchall()]
+
         conn.close()
     except Exception as e:
         print(f"Ошибка загрузки ролей из БД: {e}")
         _ADMIN_ID = None
         _ALLOWED_USERS = []
+        _ALLOWED_GROUPS = []
 
 
 def get_admin_id():
@@ -64,6 +69,15 @@ def get_allowed_users():
     """
     load_roles_from_db()
     return _ALLOWED_USERS
+
+
+def get_allowed_groups():
+    """
+    Возвращает список всех разрешенных пользователей
+    Перезагружает роли из БД перед возвратом
+    """
+    load_roles_from_db()
+    return _ALLOWED_GROUPS
 
 
 def is_admin(user_id: int) -> bool:

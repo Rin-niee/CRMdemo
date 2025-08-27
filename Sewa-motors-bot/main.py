@@ -15,7 +15,9 @@ from handlers import files
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+from utils.data import (
+    get_my_order,
+)
 # debug_router = Router()
 
 # @debug_router.message()
@@ -78,12 +80,13 @@ async def main():
     dp.include_router(router)
     # Удаляем webhook и настраиваем команды бота
     await bot.delete_webhook(drop_pending_updates=True)
+
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Главное меню"),
-            BotCommand(command="myorders", description="Мои заказы"),
-            BotCommand(command="orderplan", description="Заказы на сегодня"),
-            BotCommand(command="openorders", description="Открыть заказы"),
+            BotCommand(command="myorders", description=f"Мои заявки"),
+            BotCommand(command="orderplan", description="Открытые заявки"),
+            # BotCommand(command="openorders", description="Открыть заказы"),
         ]
     )
 
@@ -102,7 +105,7 @@ async def main():
                     await reminder_open_bids(bot)
                 except Exception:
                     pass
-                await asyncio.sleep(10000)
+                await asyncio.sleep(10)
 
         # Запускаем фоновую задачу для напоминаний
         asyncio.create_task(reminders_loop())

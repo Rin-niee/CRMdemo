@@ -37,7 +37,7 @@ async def welcome_command(message: Message, state: FSMContext):
     await state.clear()
     
     # Отправляем приветственное сообщение с клавиатурой помощи
-    await message.answer(MESSAGES["welcome"], reply_markup=get_help_menu_keyboard())
+    await message.answer(MESSAGES["welcome"], reply_markup=get_help_menu_keyboard(message.from_user.id))
 
 
 @router.message(Command("menu"))

@@ -6,8 +6,10 @@ class Companies(models.Model):
     name = models.CharField(max_length=100,verbose_name="Наименование компании")
     code = models.CharField(max_length=100, blank=True, null=True,verbose_name="Код присоединения к компании")
     INN = models.CharField(max_length=100, blank=True, null=True,verbose_name="ИНН компании")
+    OGRN = models.CharField(max_length=100, blank=True, null=True,verbose_name="ОГРН компании")
     adress = models.CharField(max_length=255, blank=True, null=True,verbose_name="Юридический адрес")
     website = models.CharField(max_length=255, blank=True, null=True,verbose_name="Сайт компании")
+    email = models.EmailField(blank=True, null=True, verbose_name="E-mail")
     is_approved = models.BooleanField(default=False, verbose_name="Одобрено")
     class Meta:
         db_table = "companies"
@@ -106,15 +108,25 @@ class Order(models.Model):
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
 
+class Groups(models.Model):
+    tg_id=models.IntegerField()
+    inspection_id = models.IntegerField()
+    clients_id = models.IntegerField()
+    class Meta:
+        db_table = "groups"
+        verbose_name = "Группа"
+        verbose_name_plural = "Группы"
+
 class TGUsers(models.Model):
+    id = models.BigIntegerField(primary_key=True,verbose_name="ID пользователя в телеграм")
     is_admin = models.BooleanField(default=0)
+    group = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True, blank = True)
     class Meta:
         db_table = "users"
         verbose_name = "Менеджер"
         verbose_name_plural = "Менеджеры"
     def __str__(self):
-        return self.id
-
+        return str(self.id)
 
 class Dealers(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True,verbose_name="Контактное лицо")
@@ -128,15 +140,6 @@ class Dealers(models.Model):
         verbose_name_plural = "Дилеры"
     def __str__(self):
         return self.company_name or "Без названия"
-
-class CarsPhoto(models.Model):
-    photo = models.FileField(upload_to='cars_photos/%Y/%m/%d/', null=True, blank=True)
-    def __str__(self):
-        return f"Photo for Order #{self.order.id}" 
-    class Meta:
-        db_table = "photo"
-        verbose_name = "Фото"
-        verbose_name_plural = "Фото"
 
 #заявка и прочее
 class bid(models.Model):
@@ -160,7 +163,7 @@ class bid(models.Model):
     power = models.CharField(max_length=100, blank=True, null=True, verbose_name="Мощность двигателя")
     transmission = models.CharField(max_length=100, blank=True, null=True, verbose_name="Коробка передач")
 
-    photo = models.ManyToManyField(CarsPhoto, blank=True, null=True, verbose_name="Фото")
+    # photo = models.ManyToManyField(CarsPhoto, blank=True, null=True, verbose_name="Фото")
     create_at = models.DateTimeField(auto_now_add=True)
     last_update = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disable', verbose_name="Статус заявки")
@@ -171,10 +174,24 @@ class bid(models.Model):
     dealer = models.ForeignKey(Dealers, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Дилер")
     opened_at = models.DateTimeField(blank=True, null=True)
     arrived_time = models.DateTimeField(blank=True, null=True)
-    checklist_point1 = models.CharField(max_length=100, null=True, blank=True)
-    checklist_point2 = models.CharField(max_length=100, null=True, blank=True)
+    checklist_point1 = models.CharField(max_length=100, null=True, blank=True, verbose_name="Состояние бампера")
+    checklist_point2 = models.CharField(max_length=100, null=True, blank=True, verbose_name="Уровень топлива в баке")
     shown_to_bot = models.BooleanField(default=False, verbose_name="Уведомление боту показано")
     class Meta:
         db_table = "bid"
         verbose_name = "Заявка"
         verbose_name_plural = "Заявки"
+    def __str__(self):
+        return f"Заявка #{self.id} — {self.brand} {self.model} ({self.year})"
+    
+class CarsPhoto(models.Model):
+    bid = models.ForeignKey(bid, on_delete=models.CASCADE, blank=True, null=True, related_name="photos")
+    file_url = models.FileField() 
+    def __str__(self):
+        return f"Photo for Order #{self.bid.id}" 
+    class Meta:
+        db_table = "photo"
+        verbose_name = "Фото"
+        verbose_name_plural = "Фото"
+
+

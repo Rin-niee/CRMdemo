@@ -7,6 +7,7 @@ services:
       - .:/usr/src/app
       - static_volume:/usr/src/app/staticfiles
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+      - storage:/usr/src/app/storage
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
     ports:
@@ -23,6 +24,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - static_volume:/usr/src/app/staticfiles
+      - storage:/usr/src/app/storage
     depends_on:
       - web
     networks:
@@ -36,14 +38,19 @@ services:
     restart: always
     env_file: ./Sewa-motors-bot/.env
     volumes:
+      # - ./Sewa-motors-bot:/usr/src/app
+      # - ./Sewa-motors-bot/storage:/usr/src/app/storage
+      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+      # - storage:/app/storage
       - ./Sewa-motors-bot:/usr/src/app
-      - ./Sewa-motors-bot/storage:/usr/src/app/storage
+      - storage:/usr/src/app/storage
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
     networks:
       - crm_network
 
 volumes:
   static_volume: {}
+  storage:
 networks:
   crm_network:
     driver: bridge

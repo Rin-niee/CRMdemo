@@ -9,6 +9,7 @@ from keyboards.inline import (
 
 from utils.data import (
     get_open_orders_with_opened_at,
+    get_open_orders_with_opened_at_day,
 )
 
 router = Router()
@@ -25,7 +26,8 @@ async def my_orders_command(message: Message, state: FSMContext):
 @router.message(Command("orderplan"))
 async def order_plan_command(message: Message, state: FSMContext):
     await state.clear()
-    orders = get_open_orders_with_opened_at()
+    # orders = get_open_orders_with_opened_at()
+    orders = get_open_orders_with_opened_at_day()
     if not orders:
         await message.answer("Нет недавно открытых открытых заказов.")
         return

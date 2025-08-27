@@ -29,35 +29,62 @@ def get_next_stage(current_state) -> Optional[Dict]:
 
 
 def build_order_info_text(order: Dict) -> str:
-    info_parts = [f"🚗 <b>{order.get('brand', '')} {order.get('model', '')}</b>"]
+    info_parts = [f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n"]
 
     if order.get("url"):
-        info_parts.append(f"<b>{order['url']}</b>")
+        info_parts.append(f"<b>🔗Ссылка на авто:</b> {order['url']}")
+    if order.get("opened_at"):
+        info_parts.append(f"<b>📅 Создан:</b> {order.get('opened_at')}")
 
+    dealer_id = order.get("dealer_id")
+    if dealer_id:
+        dealer = get_dealer_by_id(dealer_id)
+        if dealer:
+            dealer_info = []
+            if dealer.get("company_name"):
+                dealer_info.append(dealer["company_name"])
+            info_parts.append("<b>👨‍💻 Дилер:</b>\n" + "\n".join(dealer_info))
     company_id = order.get("company_id")
     if company_id:
         company = get_company_by_id(company_id)
         if company:
             info_parts.append(
-                "\n🏢<b> Компания: </b>\n"
-                + "\n".join(
+                "🏢<b> Компания: </b>\n" +
+                "Наименование: "
+                + "".join(
                     [
                         company.get("name", "Неизвестно"),
                     ]
                 )
+                +
+                "\nИНН: "
+                + "".join(
+                    [
+                        company.get("INN", "Неизвестно"),
+                    ]
+                )
+                +
+                "\nАдрес: "
+                + "".join(
+                    [
+                        company.get("OGRN", "Неизвестно"),
+                    ]
+                )
+                +
+                "\nТелефон: "
+                + "".join(
+                    [
+                        company.get("phone", "Неизвестно"),
+                    ]
+                )
+                +
+                "\nE-mai: "
+                + "".join(
+                    [
+                        company.get("email", "Неизвестно"),
+                    ]
+                )
             )
-    dealer_id = order.get("dealers_id")
-    if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
-        if dealer:
-            dealer_info = []
-            if dealer.get("name"):
-                dealer_info.append(dealer["name"])
-            if dealer.get("phone"):
-                dealer_info.append(f"{dealer['phone']}")
-            if dealer.get("address"):
-                dealer_info.append(f"{dealer['address']}")
-            info_parts.append("\n<b>📍 Дилер:</b>\n" + "\n".join(dealer_info))
 
     info_parts.append("\nГотовы начать съемку автомобиля?")
 

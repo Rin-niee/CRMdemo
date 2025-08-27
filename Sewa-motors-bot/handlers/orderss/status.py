@@ -20,7 +20,6 @@ from utils.data import (
     get_checklist_answers,
 )
 from handlers.orderss.rework import get_rework_keyboard
-from aiogram.types import InlineKeyboardButton
 
 router = Router()
 logger = logging.getLogger(__name__)

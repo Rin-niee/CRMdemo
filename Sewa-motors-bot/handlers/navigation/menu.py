@@ -28,7 +28,7 @@ router = Router()
 async def back_to_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
-        MESSAGES["welcome"], reply_markup=get_help_menu_keyboard()
+        MESSAGES["welcome"], reply_markup=get_help_menu_keyboard(callback.from_user.id)
     )
     await callback.answer()
 
@@ -63,7 +63,7 @@ async def back_to_orders(callback: CallbackQuery, state: FSMContext):
     else:
         if not company_id:
             await callback.message.edit_text(
-                "Сначала выберите компанию.", reply_markup=get_help_menu_keyboard()
+                "Сначала выберите компанию.", reply_markup=get_help_menu_keyboard(callback.from_user.id)
             )
             await callback.answer()
             return
@@ -72,7 +72,7 @@ async def back_to_orders(callback: CallbackQuery, state: FSMContext):
         if not orders:
             await callback.message.edit_text(
                 "У этой компании пока нет заказов.",
-                reply_markup=get_help_menu_keyboard(),
+                reply_markup=get_help_menu_keyboard(callback.from_user.id),
             )
             await callback.answer()
             return

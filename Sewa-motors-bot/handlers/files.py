@@ -113,8 +113,8 @@ async def handle_stage_media(message: Message, state: FSMContext):
             await message.answer("Нужно фото или видео")
             return
     else:
-        if not (message.photo or message.document):
-            await message.answer("Нужно фото")
+        if not (message.photo or message.document or message.video):
+            await message.answer("Нужно фото или видео")
             return
 
     if message.media_group_id:

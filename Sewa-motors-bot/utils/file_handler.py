@@ -2,6 +2,9 @@ import os
 from datetime import datetime
 from config import STORAGE_PATH
 from handlers.common.constans import PHOTO_STAGES
+from utils.data import (
+    insert_file_record
+)
 
 
 async def save_file_with_stage(bot, file_id: str, user_id: int, order_id, stage_title: str, file_name: str = None):
@@ -17,8 +20,10 @@ async def save_file_with_stage(bot, file_id: str, user_id: int, order_id, stage_
 
         stage_prefix = _stage_prefix(stage_title)
         file_path = os.path.join(order_folder, f"{stage_prefix}_{datetime.now().strftime('%H%M%S')}_{file_name}")
-
+        relative_file_path = os.path.relpath(file_path, start='storage')
+        insert_file_record(order_id, relative_file_path)
         await bot.download_file(file.file_path, file_path)
+        
         return True, file_path
 
     except Exception as e:
