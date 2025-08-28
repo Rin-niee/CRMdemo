@@ -246,6 +246,17 @@ def get_all_open_orders():
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM bid WHERE status = 'open'").fetchall()
 
+def get_all_open_orders_for_me(manager_id:int):
+    """
+    Получает все открытые заказы (статус 'open')
+    
+    Returns:
+        Список всех открытых заказов
+    """
+    with get_db_connection() as conn:
+        return conn.execute("SELECT * FROM bid WHERE status = 'open' and manager_id = ?" ,(manager_id,),).fetchall()
+
+
 
 def get_orders_with_deadline():
     """

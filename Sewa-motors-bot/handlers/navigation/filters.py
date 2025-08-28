@@ -9,6 +9,7 @@ from utils.data import (
     get_order_by_id,
     get_dealer_by_id,
     save_arrival_time,
+    get_all_open_orders_for_me
 )
 from handlers.orderss.selection import show_order_info
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -32,7 +33,7 @@ async def filter_orders_by_status(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
 
     if status == "open":
-        orders = get_all_open_orders()
+        orders = get_all_open_orders_for_me()
     else:
         orders = get_orders_by_status(user_id, [status])
 
