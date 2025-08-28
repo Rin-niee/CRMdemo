@@ -402,15 +402,15 @@ async def reminder_open_bids(bot):
             if uid and uid != admin_id and uid not in active_manager_ids
         ]
 
-        allowed_groups = set(
-            uid
-            for uid in (config.get_allowed_groups() or [])
-            if isinstance(uid, int)
-        )
-        targets_groups = [
-            uid
-            for uid in allowed_groups
-        ]
+        # allowed_groups = set(
+        #     uid
+        #     for uid in (config.get_allowed_groups() or [])
+        #     if isinstance(uid, int)
+        # )
+        # targets_groups = [
+        #     uid
+        #     for uid in allowed_groups
+        # ]
         orders = get_open_orders_with_opened_at()
 
         for uid in targets:
@@ -422,14 +422,14 @@ async def reminder_open_bids(bot):
                 continue
 
 
-        for uid in targets_groups:
-            thread_id = get_thread_information(uid)
-            try:
-                await bot.send_message(uid, text, parse_mode="HTML", message_thread_id=thread_id, reply_markup=get_orders_with_opened_keyboard(orders))
-                logger.info(f"reminder: sent to {uid} about open bids")
-            except Exception as e:
-                logger.error(f"reminder: failed to send to {uid}: {e}")
-                continue
+        # for uid in targets_groups:
+        #     thread_id = get_thread_information(uid)
+        #     try:
+        #         await bot.send_message(uid, text, parse_mode="HTML", message_thread_id=thread_id, reply_markup=get_orders_with_opened_keyboard(orders))
+        #         logger.info(f"reminder: sent to {uid} about open bids")
+        #     except Exception as e:
+        #         logger.error(f"reminder: failed to send to {uid}: {e}")
+        #         continue
     except Exception as e:
         logger.error(f"reminder_open_bids error: {e}")
 
