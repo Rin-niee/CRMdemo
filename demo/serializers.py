@@ -43,6 +43,7 @@ class BidsSerializer(serializers.ModelSerializer):
         queryset=User.objects.all(), required=False
     )
     user_username = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
 
     class Meta:
         model = bid

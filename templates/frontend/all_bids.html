@@ -375,6 +375,7 @@ function createOrderCard(order) {
     
         
     const statusText = order.status || 'Неизвестный статус';
+    const order_name = order.company_name.slice(0, 3);
     const managerName = order.manager || '';
     const userName = order.user_username || 'Имя не указано';
 
@@ -417,7 +418,7 @@ function createOrderCard(order) {
     }
     card.innerHTML = `
         <div class="order-header">
-            <div class="order-number">Заявка #${order.id}</div>
+            <div class="order-number">${order_name}-${order.id}</div>
         </div>
 
         <div class="client-info">
