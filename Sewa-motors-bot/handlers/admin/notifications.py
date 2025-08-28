@@ -231,16 +231,16 @@ async def reminder_job(bot):
                         if str(dealer["address"]).strip() not in ("", "0", None):
                             parts.append(str(dealer["address"]))
                     if parts:
-                        dealer_text = "<b>👨‍💻 Дилер:</b>\n"+ "" + "\n".join(parts)
+                        dealer_text = "\n<b>👨‍💻 Дилер:</b>\n"+ "" + "\n".join(parts)
                     
             company_id = order.get("company_id")
             logger.info(f"open_orders: {dealer_text}")
             if order.get("url"):
-                link_text = f"<b>🔗Ссылка на авто:</b> {order['url']}"
+                link_text = f"\n<b>🔗Ссылка на авто:</b> {order['url']}"
             if company_id:
                 company = get_company_by_id(company_id)
                 if company:
-                    parts = [f"<b>🏢 Компания:</b>"]
+                    parts = [f"\n<b>🏢 Компания:</b>"]
                     if company.get("name"):
                         parts.append(f"Наименование: {company['name']}")
                     if company.get("INN"):
@@ -257,7 +257,7 @@ async def reminder_job(bot):
             text = (
                 "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n"
                 
-                f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n\n"
+                f"🚗 <b>{order.get('brand','')} {order.get('model','')} \n Общая информация: </b>({order.get('year','')}г., {order.get('mileage','')}км, {order.get('power','')} л.с.)\n\n"
                 f"🆔 Заказ: {order.get('id')}\n" 
                 f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
 
@@ -276,18 +276,18 @@ async def reminder_job(bot):
             )
             for uid in targets:
                 try:
-                    if photo:
-                        await bot.send_photo(
-                        chat_id=uid,
-                        photo=photo,
-                        caption=text,
-                        parse_mode="HTML",
-                        reply_markup=open_kb,
+                    # if photo:
+                    #     await bot.send_photo(
+                    #     chat_id=uid,
+                    #     photo=photo,
+                    #     caption=text,
+                    #     parse_mode="HTML",
+                    #     reply_markup=open_kb,
+                    # )
+                    # else:
+                    await bot.send_message(
+                        uid, text, parse_mode="HTML", reply_markup=open_kb
                     )
-                    else:
-                        await bot.send_message(
-                            uid, text, parse_mode="HTML", reply_markup=open_kb
-                        )
                     logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
                 except Exception as e:
                     logger.error(

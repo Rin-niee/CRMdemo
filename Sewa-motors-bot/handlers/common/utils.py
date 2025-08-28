@@ -30,12 +30,12 @@ def get_next_stage(current_state) -> Optional[Dict]:
 
 
 def build_order_info_text(order: Dict) -> str:
-    info_parts = [f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n"]
+    info_parts = [f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n Общая информация: ({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n"]
 
     if order.get("url"):
-        info_parts.append(f"<b>🔗Ссылка на авто:</b> {order['url']}")
+        info_parts.append(f"\n<b>🔗Ссылка на авто:</b> {order['url']}")
     if order.get("opened_at"):
-        info_parts.append(f"<b>📅 Создан:</b> {order.get('opened_at')}")
+        info_parts.append(f"\n<b>📅 Создан:</b> {order.get('opened_at')}")
 
     dealer_id = order.get("dealer_id")
     if dealer_id:
@@ -59,13 +59,13 @@ def build_order_info_text(order: Dict) -> str:
                 if str(dealer["address"]).strip() not in ("", "0", None):
                     parts.append(str(dealer["address"]))
             if parts:
-                info_parts.append("<b>👨‍💻 Дилер:</b>\n" + "\n".join(parts))
+                info_parts.append("\n<b>👨‍💻 Дилер:</b>\n" + "\n".join(parts))
     company_id = order.get("company_id")
     if company_id:
         company = get_company_by_id(company_id)
         if company:
             info_parts.append(
-                "🏢<b> Компания: </b>\n" +
+                "\n🏢<b> Компания: </b>\n" +
                 "Наименование: "
                 + "".join(
                     [
