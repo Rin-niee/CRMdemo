@@ -236,6 +236,7 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
             photo = dealer.get("photo")
             if photo:
                 dealer_photo_url = BASE_URL + photo
+                logger.info(f"Sending dealer photo: {dealer_photo_url}")
             if photo:
                 await callback.message.answer_photo(
                     photo=dealer_photo_url,
