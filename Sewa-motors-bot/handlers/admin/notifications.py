@@ -304,11 +304,25 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
             if isinstance(uid, int)
         )
 
+        allowed_groups = set(
+            uid
+            for uid in (config.get_allowed_groups() or [])
+            if isinstance(uid, int)
+        )
+
         for uid in allowed_users:
+            try:
+                await bot.send_message(uid, text_manager, parse_mode="HTML")
+                logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
+            except Exception as e:
+                logger.error(f"reminder: failed to send manager info to {uid}: {e}")
+                continue
+
+        for uid in allowed_groups:
             message_thread = get_thread_clients(uid)
             try:
-                await bot.send_message(uid, text_manager, parse_mode="HTML", message_thread_id=message_thread)
-                logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
+                await bot.send_message(uid, text_manager, parse_mode="HTML")
+                logger.info(f"reminder: sent manager info to {uid} for order {order_id}", message_thread_id=message_thread)
             except Exception as e:
                 logger.error(f"reminder: failed to send manager info to {uid}: {e}")
                 continue
