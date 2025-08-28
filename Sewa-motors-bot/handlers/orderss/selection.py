@@ -256,7 +256,8 @@ async def precheck_entry(callback: CallbackQuery, state: FSMContext):
         order_id2 = order.get("id")
         manager_id = order.get("manager_id")
         bot = callback.bot
-        await notify_manager_arrived(bot, order_id2, manager_id)
+        if manager_id:
+            await notify_manager_arrived(bot, order_id2, manager_id)
         # Обновляем статус заказа на "progress" и назначаем менеджера
         update_order_status(order_id, "progress")
         assign_manager_to_order(order_id, callback.from_user.id)
