@@ -239,20 +239,20 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
                 dealer_photo_url = "/usr/src/app/storage/" +photo
                 photo_file = InputFile(dealer_photo_url)
                 logger.info(f"Sending dealer photo: {dealer_photo_url}")
-            if photo:
-                await callback.message.answer_photo(
-                    photo=photo_file,
-                    caption=info_text,
-                    parse_mode="HTML",
-                    reply_markup=keyboard,
-                )
-            else:
-                await callback.message.answer_photo(
-                     info_text, parse_mode="HTML", reply_markup=keyboard
-                )
-    # await safe_edit_message(
-    #     callback, text=info_text, reply_markup=keyboard, parse_mode="HTML"
-    # )
+            # if photo:
+            #     await callback.message.answer_photo(
+            #         photo=photo_file,
+            #         caption=info_text,
+            #         parse_mode="HTML",
+            #         reply_markup=keyboard,
+            #     )
+            # else:
+            #     await callback.message.answer_photo(
+            #          info_text, parse_mode="HTML", reply_markup=keyboard
+            #     )
+    await safe_edit_message(
+        callback, text=info_text, reply_markup=keyboard, parse_mode="HTML"
+    )
     await callback.answer()
 
 
