@@ -1,5 +1,6 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, InputFile
+
 from aiogram.fsm.context import FSMContext
 from typing import Dict
 from keyboards.inline import get_orders_with_opened_keyboard
@@ -236,10 +237,11 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
             photo = dealer.get("photo")
             if photo:
                 dealer_photo_url = "/usr/src/app/storage/" +photo
+                photo_file = InputFile(dealer_photo_url)
                 logger.info(f"Sending dealer photo: {dealer_photo_url}")
             if photo:
                 await callback.message.answer_photo(
-                    photo=open(dealer_photo_url, "rb"),
+                    photo=photo_file,
                     caption=info_text,
                     parse_mode="HTML",
                     reply_markup=keyboard,
