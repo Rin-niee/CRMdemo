@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 # Загружаем переменные окружения из файла .env
 load_dotenv(override=True)
+BASE_URL = os.getenv("BASE_URL")
 
 # Токен бота из переменных окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN")

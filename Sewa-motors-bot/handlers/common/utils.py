@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery
 from handlers.common.constans import STAGE_INDEX, PHOTO_STAGES, TOTAL_STAGES
 from handlers.orderss.states import OrderStates
 from utils.data import get_dealer_by_id, get_company_by_id
+from config import BASE_URL
 
 logger = logging.getLogger(__name__)
 

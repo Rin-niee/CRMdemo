@@ -6,6 +6,7 @@ from keyboards.inline import get_orders_with_opened_keyboard
 from utils.data import get_open_orders_with_opened_at, get_order_by_id
 from handlers.orderss.states import OrderStates
 import logging
+from config import BASE_URL
 from handlers.common.utils import safe_edit_message, build_order_info_text
 from keyboards.inline import (
     get_companies_keyboard,
@@ -234,11 +235,13 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         if dealer:
             photo = dealer.get("photo")
             if photo:
+                dealer_photo_url = BASE_URL + photo
+            if photo:
                 await callback.message.answer_photo(
-                    photo=photo,  # или BytesIO
+                    photo=dealer_photo_url,
                     caption=info_text,
                     parse_mode="HTML",
-                    reply_markup=keyboard,  # кнопка
+                    reply_markup=keyboard,
                 )
             else:
                 await callback.message.answer_photo(
