@@ -30,10 +30,10 @@ def get_next_stage(current_state) -> Optional[Dict]:
 
 
 def build_order_info_text(order: Dict) -> str:
-    info_parts = [f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n Общая информация: ({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n"]
+    info_parts = [f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n"]
 
     if order.get("url"):
-        info_parts.append(f"\n<b>🔗Ссылка на авто:</b> {order['url']}")
+        info_parts.append(f"<b>🔗Ссылка на авто:</b> {order['url']}")
     if order.get("opened_at"):
         info_parts.append(f"\n<b>📅 Создан:</b> {order.get('opened_at')}")
 

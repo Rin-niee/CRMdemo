@@ -257,7 +257,7 @@ async def reminder_job(bot):
             text = (
                 "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n"
                 
-                f"🚗 <b>{order.get('brand','')} {order.get('model','')} \n Общая информация: </b>({order.get('year','')}г., {order.get('mileage','')}км, {order.get('power','')} л.с.)\n\n"
+                f"🚗 <b>{order.get('brand','')} {order.get('model','')} \n</b>({order.get('year','')}г., {order.get('mileage','')}км, {order.get('power','')} л.с.)\n"
                 f"🆔 Заказ: {order.get('id')}\n" 
                 f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
 
