@@ -1,13 +1,11 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, FSInputFile, InputFile
-
+from aiogram.types import CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 from typing import Dict
 from keyboards.inline import get_orders_with_opened_keyboard
 from utils.data import get_open_orders_with_opened_at, get_order_by_id
 from handlers.orderss.states import OrderStates
 import logging
-from config import BASE_URL
 from handlers.common.utils import safe_edit_message, build_order_info_text
 from keyboards.inline import (
     get_companies_keyboard,
@@ -21,7 +19,6 @@ from utils.data import (
     get_order_by_id,
     get_orders_by_company,
     get_available_orders_by_company, 
-    get_dealer_by_id,
 )
 from handlers.orderss.review import AdminReworkStates
 from utils.data import clear_manager_for_order
@@ -228,28 +225,7 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    dealer_id = order.get("dealer_id")
-
-    logger.info(f"open_orders: {dealer_id}")
-    if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
-        if dealer:
-            photo = dealer.get("photo")
-            if photo:
-                dealer_photo_url = "/usr/src/app/storage/" +photo
-                photo_file = InputFile(dealer_photo_url)
-                logger.info(f"Sending dealer photo: {dealer_photo_url}")
-            # if photo:
-            #     await callback.message.answer_photo(
-            #         photo=photo_file,
-            #         caption=info_text,
-            #         parse_mode="HTML",
-            #         reply_markup=keyboard,
-            #     )
-            # else:
-            #     await callback.message.answer_photo(
-            #          info_text, parse_mode="HTML", reply_markup=keyboard
-            #     )
+        
     await safe_edit_message(
         callback, text=info_text, reply_markup=keyboard, parse_mode="HTML"
     )
