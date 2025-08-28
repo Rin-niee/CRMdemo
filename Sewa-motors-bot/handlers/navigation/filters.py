@@ -33,7 +33,7 @@ async def filter_orders_by_status(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
 
     if status == "open":
-        orders = get_all_open_orders_for_me()
+        orders = get_all_open_orders_for_me(user_id)
     else:
         orders = get_orders_by_status(user_id, [status])
 
