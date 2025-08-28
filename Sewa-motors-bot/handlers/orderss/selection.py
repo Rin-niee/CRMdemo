@@ -18,11 +18,12 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from utils.data import (
     get_order_by_id,
     get_orders_by_company,
-    get_available_orders_by_company,
+    get_available_orders_by_company, 
+    get_dealer_by_id,
 )
 from handlers.orderss.review import AdminReworkStates
 from utils.data import clear_manager_for_order
-from handlers.admin.notifications import notify_admin_manager_decline
+from handlers.admin.notifications import notify_admin_manager_decline, notify_manager_arrived
 from utils.data import update_order_status as _uos
 
 
@@ -225,10 +226,27 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    dealer_id = order.get("dealer_id")
 
-    await safe_edit_message(
-        callback, text=info_text, reply_markup=keyboard, parse_mode="HTML"
-    )
+    logger.info(f"open_orders: {dealer_id}")
+    if dealer_id:
+        dealer = get_dealer_by_id(dealer_id)
+        if dealer:
+            photo = dealer.get("photo")
+            if photo:
+                await callback.message.answer_photo(
+                    photo=photo,  # или BytesIO
+                    caption=info_text,
+                    parse_mode="HTML",
+                    reply_markup=keyboard,  # кнопка
+                )
+            else:
+                await callback.message.answer_photo(
+                     info_text, parse_mode="HTML", reply_markup=keyboard
+                )
+    # await safe_edit_message(
+    #     callback, text=info_text, reply_markup=keyboard, parse_mode="HTML"
+    # )
     await callback.answer()
 
 
@@ -252,6 +270,11 @@ async def precheck_entry(callback: CallbackQuery, state: FSMContext):
     try:
         from utils.data import update_order_status, assign_manager_to_order
         order_id = str(data.get("selected_order"))
+        order = get_order_by_id(int(order_id))
+        order_id2 = order.get("id")
+        manager_id = order.get("manager_id")
+        bot = callback.bot
+        await notify_manager_arrived(bot, order_id2, manager_id)
         # Обновляем статус заказа на "progress" и назначаем менеджера
         update_order_status(order_id, "progress")
         assign_manager_to_order(order_id, callback.from_user.id)

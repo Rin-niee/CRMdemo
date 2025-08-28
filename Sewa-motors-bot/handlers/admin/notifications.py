@@ -76,16 +76,16 @@ async def notify_managers_order_opened(bot, order):
     try:
         admin_id = config.get_admin_id()
         allowed_users = config.get_allowed_users() or []
-        allowed_groups = config.get_allowed_groups() or []
+        # allowed_groups = config.get_allowed_groups() or []
 
         # Фильтруем только валидные ID пользователей
         allowed_users = [
             uid for uid in allowed_users if isinstance(uid, int) and uid > 100000
         ]
 
-        allowed_groups = [
-            uid for uid in allowed_groups if isinstance(uid, int)
-        ]
+        # allowed_groups = [
+        #     uid for uid in allowed_groups if isinstance(uid, int)
+        # ]
 
         # Получаем ID менеджеров, у которых уже есть заказы в работе
         active_progress_ids = set(get_progress_manager_ids())
@@ -145,21 +145,21 @@ async def notify_managers_order_opened(bot, order):
                 continue
 
 
-        for user_id in allowed_groups:
-            if not user_id:
-                continue
-            if user_id == admin_id:
-                continue  # Пропускаем администратора
-            if user_id in active_progress_ids:
-                continue  # Пропускаем менеджеров с заказами в работе
-            try:
-                await bot.send_message(
-                    user_id, text, parse_mode="HTML", reply_markup=open_kb
-                )
-                logger.info(f"notify_opened: sent to {user_id}")
-            except Exception as e:
-                logger.error(f"notify_opened: failed to send to {user_id}: {e}")
-                continue
+        # for user_id in allowed_groups:
+        #     if not user_id:
+        #         continue
+        #     if user_id == admin_id:
+        #         continue  # Пропускаем администратора
+        #     if user_id in active_progress_ids:
+        #         continue  # Пропускаем менеджеров с заказами в работе
+        #     try:
+        #         await bot.send_message(
+        #             user_id, text, parse_mode="HTML", reply_markup=open_kb
+        #         )
+        #         logger.info(f"notify_opened: sent to {user_id}")
+        #     except Exception as e:
+        #         logger.error(f"notify_opened: failed to send to {user_id}: {e}")
+        #         continue
     except Exception:
         # Логируем ошибки, но не прерываем работу
         pass
@@ -194,17 +194,17 @@ async def reminder_job(bot):
                 if uid and uid != admin_id and uid not in active_manager_ids
             ]
 
-            allowed_groups = set(
-                [
-                    uid
-                    for uid in (config.get_allowed_groups() or [])
-                    if isinstance(uid, int)
-                ]
-            )
-            targets_groups = [
-                uid
-                for uid in allowed_groups
-            ]
+            # allowed_groups = set(
+            #     [
+            #         uid
+            #         for uid in (config.get_allowed_groups() or [])
+            #         if isinstance(uid, int)
+            #     ]
+            # )
+            # targets_groups = [
+            #     uid
+            #     for uid in allowed_groups
+            # ]
             dealer_text = ""
             dealer_id = order.get("dealer_id")
 
@@ -213,9 +213,23 @@ async def reminder_job(bot):
                 dealer = get_dealer_by_id(dealer_id)
                 logger.info(f"dealer: {dealer}")
                 if dealer:
+                    photo = dealer.get("photo")
                     parts = []
+                    if dealer.get("name"):
+                        if str(dealer["name"]).strip() not in ("", "0", None):
+                            parts.append(str(dealer["name"]))
+
                     if dealer.get("company_name"):
-                        parts.append(str(dealer["company_name"]))
+                        if str(dealer["company_name"]).strip() not in ("", "0", None):
+                            parts.append(str(dealer["company_name"]))
+
+                    if dealer.get("phone"):
+                        if str(dealer["phone"]).strip() not in ("", "0", None):
+                            parts.append(str(dealer["phone"]))
+
+                    if dealer.get("address"):
+                        if str(dealer["address"]).strip() not in ("", "0", None):
+                            parts.append(str(dealer["address"]))
                     if parts:
                         dealer_text = "<b>👨‍💻 Дилер:</b>\n"+ "" + "\n".join(parts)
                     
@@ -242,6 +256,7 @@ async def reminder_job(bot):
                     company_text = "\n".join(parts)
             text = (
                 "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n"
+                
                 f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>({order.get('year','')}г.,{order.get('mileage','')}км, {order.get('power','')} л.с.)\n\n"
                 f"🆔 Заказ: {order.get('id')}\n" 
                 f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
@@ -261,9 +276,18 @@ async def reminder_job(bot):
             )
             for uid in targets:
                 try:
-                    await bot.send_message(
-                        uid, text, parse_mode="HTML", reply_markup=open_kb
+                    if photo:
+                        await bot.send_photo(
+                        chat_id=uid,
+                        photo=photo,
+                        caption=text,
+                        parse_mode="HTML",
+                        reply_markup=open_kb,
                     )
+                    else:
+                        await bot.send_message(
+                            uid, text, parse_mode="HTML", reply_markup=open_kb
+                        )
                     logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
                 except Exception as e:
                     logger.error(
@@ -271,18 +295,18 @@ async def reminder_job(bot):
                     )
                     continue
 
-            for uid in targets_groups:
-                thread_id = get_thread_information(uid)
-                try:
-                    await bot.send_message(
-                        uid, text, parse_mode="HTML", reply_markup=open_kb, message_thread_id=thread_id 
-                    )
-                    logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
-                except Exception as e:
-                    logger.error(
-                        f"reminder: failed to send to {uid} for order {order.get('id')}: {e}"
-                    )
-                    continue
+            # for uid in targets_groups:
+            #     thread_id = get_thread_information(uid)
+            #     try:
+            #         await bot.send_message(
+            #             uid, text, parse_mode="HTML", reply_markup=open_kb, message_thread_id=thread_id 
+            #         )
+            #         logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
+            #     except Exception as e:
+            #         logger.error(
+            #             f"reminder: failed to send to {uid} for order {order.get('id')}: {e}"
+            #         )
+            #         continue
             try:
                 mark_order_as_shown(order.get("id"))
                 logger.info(f"reminder: shown_to_bot set True for order {order.get('id')}")
@@ -298,11 +322,11 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
         arrival_time =  arrival_time + timedelta(hours=10)
         arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
         text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет во <b>{arrival_str}</b>."
-        allowed_users = set(
-            uid
-            for uid in (config.get_allowed_users() or [])
-            if isinstance(uid, int)
-        )
+        # allowed_users = set(
+        #     uid
+        #     for uid in (config.get_allowed_users() or [])
+        #     if isinstance(uid, int)
+        # )
 
         allowed_groups = set(
             uid
@@ -310,13 +334,13 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
             if isinstance(uid, int)
         )
 
-        for uid in allowed_users:
-            try:
-                await bot.send_message(uid, text_manager, parse_mode="HTML")
-                logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
-            except Exception as e:
-                logger.error(f"reminder: failed to send manager info to {uid}: {e}")
-                continue
+        # for uid in allowed_users:
+        #     try:
+        #         await bot.send_message(uid, text_manager, parse_mode="HTML")
+        #         logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
+        #     except Exception as e:
+        #         logger.error(f"reminder: failed to send manager info to {uid}: {e}")
+        #         continue
 
         for uid in allowed_groups:
             message_thread = get_thread_clients(uid)
@@ -329,6 +353,28 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
 
     except Exception as e:
         logger.error(f"notify_manager_departure error: {e}")
+
+
+async def notify_manager_arrived(bot, order_id: int, manager_id: int):
+    try:
+        text_manager = f"📷 Осмотрщик <b>{manager_id}</b>, прикрепленный к заказу <b>{order_id}</b> прибыл на место и начал съемку авто."
+
+        allowed_groups = set(
+            uid
+            for uid in (config.get_allowed_groups() or [])
+            if isinstance(uid, int)
+        )
+        for uid in allowed_groups:
+            message_thread = get_thread_clients(uid)
+            try:
+                await bot.send_message(uid, text_manager, parse_mode="HTML", message_thread_id=message_thread)
+                logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
+            except Exception as e:
+                logger.exception(f"Ошибка отправки уведомления в {uid}")
+                continue
+
+    except Exception as e:
+        logger.exception(f"Ошибка отправки уведомления в {uid}")
 
 
 
@@ -409,11 +455,20 @@ async def send_files_to_admin(
     order_id: str, photographer_user_id: int, bot, is_rework: bool = False
 ):
     try:
+        
         admin_id = config.get_admin_id()
         if admin_id is None:
             logger.error("Админ не найден")
             return
-
+        allowed_groups = set(
+            uid
+            for uid in (config.get_allowed_groups() or [])
+            if isinstance(uid, int)
+        )
+        targets_groups = [
+            uid
+            for uid in allowed_groups
+        ]
         order = get_order_by_id(order_id)
         files = get_user_files(photographer_user_id, order_id)
         if is_rework:
@@ -480,6 +535,28 @@ async def send_files_to_admin(
         )
         await bot.send_message(admin_id, action_text, reply_markup=kb)
 
+        prefix_group = (
+            "🔄 <b>Информация по новому заказу после доработки!</b>"
+            if is_rework
+            else "🆕 <b>Информация по новому заказу!</b>"
+        )
+        header_text1 = (
+            f"{prefix_group}\n\n"
+            f"<b>{order.get('brand', '')} {order.get('model', '')}</b>\n"
+            f"\n👤 Фотограф ID: {photographer_user_id}\n"
+            f"📁 Всего файлов: {len(files)}"
+        )
+        for uid in targets_groups:
+            thread_id = get_thread_information(uid)
+            try:
+                await bot.send_message(uid, header_text1, parse_mode="HTML", message_thread_id=thread_id)
+                await bot.send_media_group(uid, media_group, message_thread_id=thread_id)
+                await bot.send_video(uid, FSInputFile(f["path"]), message_thread_id=thread_id)
+                await bot.send_message(uid, checklist_text, parse_mode="HTML", message_thread_id=thread_id)
+                logger.info(f"reminder: sent to {uid} about open bids")
+            except Exception as e:
+                logger.error(f"reminder: failed to send to {uid}: {e}")
+                continue
     except Exception as e:
         logger.error(f"Ошибка отправки заказа админу: {e}")
 

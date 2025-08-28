@@ -25,7 +25,7 @@ _require_video_for_order: dict[str, bool] = {}
 
 async def _send_manager_start_button(bot, manager_id: int, order_id: str):
     kb = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="📸 Начать съёмку", callback_data=f"start_photo_session_now:{order_id}")]]
+        inline_keyboard=[[InlineKeyboardButton(text="📸 Загрузить осмотр", callback_data=f"start_photo_session_now:{order_id}")]]
     )
     await bot.send_message(manager_id, "▶️ Продолжайте осмотр.", reply_markup=kb)
 
@@ -121,57 +121,80 @@ async def precheck_send_to_manager(message: Message, state: FSMContext):
 
 _pending_video_messages = {}
 
-# --- ЗАПРОС ВИДЕО У ОСМОТРЩИКА ---
+# # --- ЗАПРОС ВИДЕО У ОСМОТРЩИКА ---
+# @router.callback_query(F.data.startswith("precheck_req_video_"))
+# async def precheck_request_video(callback: CallbackQuery, state: FSMContext):
+#     order_id = callback.data[len("precheck_req_video_"):]
+#     order = get_order_by_id(int(order_id))
+#     if not order:
+#         await callback.answer("Заказ не найден.", show_alert=True)
+#         return
+
+#     await callback.answer("Запросил у осмотрщика короткое видео.", show_alert=True)
+#     await callback.message.edit_reply_markup(reply_markup=get_precheck_after_video_keyboard(order_id))
+#     _require_video_for_order[order_id] = True
+
+#     manager = order.get("manager_id")
+#     if not manager:
+#         return
+
+#     group_user = get_all_users(manager)
+#     group = get_manager_group(group_user)
+#     if not group:
+#         return
+
+#     thread_id = get_thread_information(group)
+
+#     kb = InlineKeyboardMarkup(inline_keyboard=[
+#         [InlineKeyboardButton(
+#             text="📹 Отправить видео для этого заказа",
+#             callback_data=f"send_video_{order_id}"
+#         )]
+#     ])
+
+#     try:
+#         if thread_id:
+#             sent_msg = await callback.bot.send_message(
+#                 group,
+#                 "📹 Снимите короткий видео-обзор и отправьте через кнопку ниже. После отправки ожидайте дальнейшие инструкции от администратора.",
+#                 reply_markup=kb,
+#                 message_thread_id=thread_id
+#             )
+#         else:
+#             sent_msg = await callback.bot.send_message(
+#                 group,
+#                 "📹 Снимите короткий видео-обзор и отправьте через кнопку ниже. После отправки ожидайте дальнейшие инструкции от администратора.",
+#                 reply_markup=kb
+#             )
+#         _pending_video_messages[order_id] = sent_msg.message_id
+#         print(f"[INFO] Сообщение с кнопкой для видео отправлено в группу {group} с message_id={sent_msg.message_id}")
+
+#     except Exception as e:
+#         print(f"[ERROR] Ошибка в precheck_request_video: {e}")
+#         await callback.message.answer(f"Произошла ошибка: {e}")
+
 @router.callback_query(F.data.startswith("precheck_req_video_"))
 async def precheck_request_video(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data[len("precheck_req_video_"):]
     order = get_order_by_id(int(order_id))
-    if not order:
-        await callback.answer("Заказ не найден.", show_alert=True)
-        return
-
     await callback.answer("Запросил у осмотрщика короткое видео.", show_alert=True)
     await callback.message.edit_reply_markup(reply_markup=get_precheck_after_video_keyboard(order_id))
     _require_video_for_order[order_id] = True
-
-    manager = order.get("manager_id")
-    if not manager:
-        return
-
-    group_user = get_all_users(manager)
-    group = get_manager_group(group_user)
-    if not group:
-        return
-
-    thread_id = get_thread_information(group)
-
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(
             text="📹 Отправить видео для этого заказа",
             callback_data=f"send_video_{order_id}"
         )]
     ])
-
-    try:
-        if thread_id:
+    if order and order.get("manager_id"):
+        try:
             sent_msg = await callback.bot.send_message(
-                group,
-                "📹 Снимите короткий видео-обзор и отправьте через кнопку ниже. После отправки ожидайте дальнейшие инструкции от администратора.",
-                reply_markup=kb,
-                message_thread_id=thread_id
+                order["manager_id"],
+                "📹 Снимите короткий видео-обзор и отправьте. После отправки ожидайте дальнейшие инструкции от администратора.",reply_markup=kb
             )
-        else:
-            sent_msg = await callback.bot.send_message(
-                group,
-                "📹 Снимите короткий видео-обзор и отправьте через кнопку ниже. После отправки ожидайте дальнейшие инструкции от администратора.",
-                reply_markup=kb
-            )
-        _pending_video_messages[order_id] = sent_msg.message_id
-        print(f"[INFO] Сообщение с кнопкой для видео отправлено в группу {group} с message_id={sent_msg.message_id}")
-
-    except Exception as e:
-        print(f"[ERROR] Ошибка в precheck_request_video: {e}")
-        await callback.message.answer(f"Произошла ошибка: {e}")
+            _pending_video_messages[order_id] = sent_msg.message_id
+        except Exception:
+            pass
 
 
 # --- ОБРАБОТКА ПРИСЛАННОГО ВИДЕО ---
@@ -291,42 +314,57 @@ async def send_video_callback(callback: CallbackQuery, state: FSMContext):
 #     except Exception as e:
 #         print(f"Failed to send message to group {group}: {e}")
         
+# #ПРОДОЛЖИТЬ ОСМОТР
+# @router.callback_query(F.data.startswith("precheck_continue_"))
+# async def precheck_continue(callback: CallbackQuery, state: FSMContext):
+#     order_id = callback.data[len("precheck_continue_"):]
+#     order = get_order_by_id(int(order_id))
+#     if not order:
+#         await callback.answer("Заказ не найден.", show_alert=True)
+#         return
+
+#     manager = order.get("manager_id")
+#     if not manager:
+#         await callback.answer("Осмотрщик не назначен.", show_alert=True)
+#         return
+#     group_user = get_all_users(manager)
+#     group = get_manager_group(group_user)
+#     thread_id = get_thread_information(group) if group else None
+#     _active_chats.pop(str(order_id), None)
+#     _chat_manager_to_order.pop(manager, None)
+#     _require_video_for_order.pop(str(order_id), None)
+#     task = _pending_customer_wait.pop(str(order_id), None)
+#     if task:
+#         task.cancel()
+#     # await _send_manager_start_button(callback.bot, manager, str(order_id))
+#     if group:
+#         try:
+#             if thread_id:
+#                 await _send_group_continue_button(callback.bot, group, str(order_id), thread_id)
+#             else:
+#                 await _send_group_continue_button(callback.bot, group, str(order_id), thread_id)
+#             await callback.answer("Сообщение отправлено в группу.", show_alert=True)
+#         except Exception as e:
+#             await callback.answer("Не удалось отправить сообщение в группу.", show_alert=True)
+#             print(f"Failed to send message to group {group}: {e}")
+#     else:
+#         await callback.answer("Продолжайте осмотр", show_alert=True)
+
 #ПРОДОЛЖИТЬ ОСМОТР
 @router.callback_query(F.data.startswith("precheck_continue_"))
 async def precheck_continue(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data[len("precheck_continue_"):]
     order = get_order_by_id(int(order_id))
-    if not order:
-        await callback.answer("Заказ не найден.", show_alert=True)
-        return
-
-    manager = order.get("manager_id")
-    if not manager:
-        await callback.answer("Осмотрщик не назначен.", show_alert=True)
-        return
-    group_user = get_all_users(manager)
-    group = get_manager_group(group_user)
-    thread_id = get_thread_information(group) if group else None
-    _active_chats.pop(str(order_id), None)
-    _chat_manager_to_order.pop(manager, None)
-    _require_video_for_order.pop(str(order_id), None)
+    if order and order.get("manager_id"):
+        await _send_manager_start_button(callback.bot, order["manager_id"], str(order_id))
+        _active_chats.pop(str(order_id), None)
+        _chat_manager_to_order.pop(order["manager_id"], None)
+        _require_video_for_order.pop(str(order_id), None)
     task = _pending_customer_wait.pop(str(order_id), None)
     if task:
         task.cancel()
-    # await _send_manager_start_button(callback.bot, manager, str(order_id))
-    if group:
-        try:
-            if thread_id:
-                await _send_group_continue_button(callback.bot, group, str(order_id), thread_id)
-            else:
-                await _send_group_continue_button(callback.bot, group, str(order_id), thread_id)
-            await callback.answer("Сообщение отправлено в группу.", show_alert=True)
-        except Exception as e:
-            await callback.answer("Не удалось отправить сообщение в группу.", show_alert=True)
-            print(f"Failed to send message to group {group}: {e}")
-    else:
-        await callback.answer("Продолжайте осмотр", show_alert=True)
-     
+    await callback.answer("Продолжайте осмотр", show_alert=True)
+
 
 @router.callback_query(F.data.startswith("start_photo_session_now:"))
 async def start_session_now(callback: CallbackQuery, state: FSMContext):
@@ -397,32 +435,32 @@ async def precheck_chat_bridge(message: Message, state: FSMContext):
     if not manager:
         await callback.answer("Осмотрщик не назначен.", show_alert=True)
         return
-    group_user = get_all_users(manager)
-    group = get_manager_group(group_user)
-    thread_id = get_thread_information(group) if group else None
+    # group_user = get_all_users(manager)
+    # group = get_manager_group(group_user)
+    # thread_id = get_thread_information(group) if group else None
     kb = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="📸 Загрузить осмотр", callback_data=f"start_photo_session_now:{order_id}")]]
     )
-    if group:
-        try:
-            if thread_id:
-                hint = "\n\nВы можете ответить, нажмите кнопку ниже."
-                await message.bot.send_message(
-                    group,
-                    f"💬 Сообщение от администратора:\n{message.text}",#{hint}
-                    reply_markup=kb, message_thread_id=thread_id,
-                )
-            else:
-                hint = "\n\nВы можете ответить, нажмите кнопку ниже."
-                await message.bot.send_message(
-                    f"💬 Сообщение от администратора:\n{message.text}",#{hint}
-                    reply_markup=kb,
-                )
-        except Exception as e:
-            await callback.answer("Не удалось отправить сообщение в группу.", show_alert=True)
-            print(f"Failed to send message to group {group}: {e}")
-    else:
-        await message.answer("Отправлено осмотрщику.")
+    # if group:
+    try:
+        # if thread_id:
+        #     hint = "\n\nВы можете ответить, нажмите кнопку ниже."
+        #     await message.bot.send_message(
+        #         group,
+        #         f"💬 Сообщение от администратора:\n{message.text}",#{hint}
+        #         reply_markup=kb, message_thread_id=thread_id,
+        #     )
+        # else:
+        # hint = "\n\nВы можете ответить, нажмите кнопку ниже."
+        await message.bot.send_message(manager,
+            f"💬 Сообщение от администратора:\n{message.text}", #{hint}
+            reply_markup=kb,
+        )
+    except Exception as e:
+        await callback.answer("Не удалось отправить сообщение в группу.", show_alert=True)
+        print(f"Failed to send message to group {group}: {e}")
+    # else:
+    #     await message.answer("Отправлено осмотрщику.")
 
 
 @router.message(OrderStates.precheck_chat_manager, F.text & ~F.text.startswith('/'))

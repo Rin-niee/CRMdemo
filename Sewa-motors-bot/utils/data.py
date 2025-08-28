@@ -447,6 +447,29 @@ def get_open_orders_older_than(min_age_seconds: int):
         ).fetchall()
 
 
+# import aiosqlite
+
+# async def get_open_orders_older_than_async(min_age_seconds: int):
+#     """
+#     Получает открытые заказы старше указанного времени (асинхронно)
+#     """
+#     async with aiosqlite.connect("your_db.sqlite") as db:
+#         db.row_factory = aiosqlite.Row  # чтобы можно было обращаться как к словарю
+#         async with db.execute(
+#             """
+#             SELECT *
+#             FROM bid
+#             WHERE status = 'open'
+#               AND opened_at IS NOT NULL
+#               AND (julianday('now') - julianday(opened_at)) * 86400 >= ?
+#             ORDER BY opened_at ASC
+#             """,
+#             (min_age_seconds,)
+#         ) as cursor:
+#             rows = await cursor.fetchall()
+#     return rows
+
+
 def get_company_by_id(company_id: int):
     """
     Получает информацию о компании по ID

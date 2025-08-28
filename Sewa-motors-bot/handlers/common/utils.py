@@ -39,11 +39,26 @@ def build_order_info_text(order: Dict) -> str:
     dealer_id = order.get("dealer_id")
     if dealer_id:
         dealer = get_dealer_by_id(dealer_id)
+        logger.info(f"dealer: {dealer}")
         if dealer:
-            dealer_info = []
+            parts = []
+            if dealer.get("name"):
+                if str(dealer["name"]).strip() not in ("", "0", None):
+                    parts.append(str(dealer["name"]))
+
             if dealer.get("company_name"):
-                dealer_info.append(dealer["company_name"])
-            info_parts.append("<b>👨‍💻 Дилер:</b>\n" + "\n".join(dealer_info))
+                if str(dealer["company_name"]).strip() not in ("", "0", None):
+                    parts.append(str(dealer["company_name"]))
+
+            if dealer.get("phone"):
+                if str(dealer["phone"]).strip() not in ("", "0", None):
+                    parts.append(str(dealer["phone"]))
+
+            if dealer.get("address"):
+                if str(dealer["address"]).strip() not in ("", "0", None):
+                    parts.append(str(dealer["address"]))
+            if parts:
+                info_parts.append("<b>👨‍💻 Дилер:</b>\n" + "\n".join(parts))
     company_id = order.get("company_id")
     if company_id:
         company = get_company_by_id(company_id)

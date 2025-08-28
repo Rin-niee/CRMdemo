@@ -7,7 +7,7 @@ from handlers.common.utils import (
     get_next_stage,
     get_stage_by_state,
 )
-from handlers.admin.notifications import send_files_to_admin
+from handlers.admin.notifications import send_files_to_admin,notify_manager_arrived
 from utils.file_handler import get_stage_files, get_user_files
 from keyboards.inline import (
     get_photo_stage_keyboard,
@@ -28,6 +28,7 @@ router = Router()
 
 @router.callback_query(F.data == "start_photo_session")
 async def start_photo_session(callback: CallbackQuery, state: FSMContext):
+ 
     """
     Начинает фотосессию автомобиля
     
@@ -49,7 +50,6 @@ async def start_photo_session(callback: CallbackQuery, state: FSMContext):
 
     # Получаем данные заказа
     order = get_order_by_id(int(selected_order))
-    
     # Проверяем, не завершен ли заказ
     if order and order.get("status") == "done":
         await callback.answer(
