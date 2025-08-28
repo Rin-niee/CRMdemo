@@ -239,7 +239,7 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
                 logger.info(f"Sending dealer photo: {dealer_photo_url}")
             if photo:
                 await callback.message.answer_photo(
-                    photo=dealer_photo_url,
+                    photo=open(dealer_photo_url, "rb"),
                     caption=info_text,
                     parse_mode="HTML",
                     reply_markup=keyboard,
