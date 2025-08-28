@@ -375,7 +375,7 @@ function createOrderCard(order) {
     
         
     const statusText = order.status || 'Неизвестный статус';
-    const order_name = order.company_name.slice(0, 3);
+    const order_name = order.company_name.substring(0, 3) || "";
     const managerName = order.manager || '';
     const userName = order.user_username || 'Имя не указано';
 

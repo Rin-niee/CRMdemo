@@ -53,6 +53,8 @@ class BidsSerializer(serializers.ModelSerializer):
     def get_user_username(self, obj):
         return obj.user.username if obj.user else None
 
+    def get_company_name(self, obj):
+        return obj.company.name if obj.company else None
     def create(self, validated_data):
         # photos_data = validated_data.pop('photo', [])
         user = validated_data.get('user') or self.context['request'].user
