@@ -284,14 +284,12 @@ async function logoutUser() {
     });
 
     if (response.ok) {
-        // Перезагружаем страницу или обновляем блок
         window.location.reload();
     } else {
         alert("Ошибка при выходе");
     }
 }
 
-// Навешиваем обработчик только если кнопка есть
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", logoutUser);
@@ -375,12 +373,11 @@ function createOrderCard(order) {
     
         
     const statusText = order.status || 'Неизвестный статус';
-    const order_name = order.company_name.substring(0, 3) || "";
+    const order_name = (order.company_name.substring(0, 3) || "").toUpperCase()
     const managerName = order.manager || '';
     const userName = order.user_username || 'Имя не указано';
 
     let detailsHTML = '';
-    // проверяем есть ли хотя бы один из brand, model, year
     if (order.brand || order.model || order.year) {
         detailsHTML = `
             <div class="order-details">

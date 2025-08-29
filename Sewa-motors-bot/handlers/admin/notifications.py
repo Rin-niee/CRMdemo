@@ -319,9 +319,9 @@ async def reminder_job(bot):
 
 async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_time: datetime):
     try:
-        arrival_time =  arrival_time + timedelta(hours=10)
+        arrival_time =  arrival_time + timedelta(hours=3)
         arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
-        text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет во <b>{arrival_str}</b>."
+        text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_str} (МСК)</b>."
         # allowed_users = set(
         #     uid
         #     for uid in (config.get_allowed_users() or [])
