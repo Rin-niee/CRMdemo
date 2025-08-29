@@ -223,18 +223,20 @@ async def reminder_job(bot):
             order_year = order.get('year','')
             order_mileage = order.get('mileage','')
             order_power = order.get('power','')
-            info_parts =[]
             if order_brand and order_model:
-                info_parts.append(f"🚗 <b>{order_brand} {order_model}</b>\n")
+                text1 = f"🚗 <b>{order_brand} {order_model}</b>"
+                details_list = []
                 if order_year:
-                    info_parts.append(f"{order_year} ")
+                    details_list.append(f"{order_year} г.")
                 if order_mileage:
-                    info_parts.append(f"{order_mileage} ")
+                    details_list.append(f"{order_mileage} км")
                 if order_power:
-                    info_parts.append(f"{order_power} ")    
+                    details_list.append(f"{order_power} л.с.")
+
+                if details_list:
+                    text1 += "\n" + "  ".join(details_list) 
             text = (
-                "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n" +
-                info_parts+
+                "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n" + text1 +
                 f"🆔 Заказ: {order.get('id')}\n" +
                 f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
  

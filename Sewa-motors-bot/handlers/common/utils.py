@@ -37,16 +37,21 @@ def build_order_info_text(order: Dict) -> str:
     order_mileage = order.get('mileage','')
     order_power = order.get('power','')
     if order_brand and order_model:
-        info_parts.append(f"🚗 <b>{order_brand} {order_model}</b>\n")
+        text = f"🚗 <b>{order_brand} {order_model}</b>"
+        details_list = []
         if order_year:
-            info_parts.append(f"{order_year} ")
+            details_list.append(f"{order_year} г.")
         if order_mileage:
-            info_parts.append(f"{order_mileage} ")
+            details_list.append(f"{order_mileage} км")
         if order_power:
-            info_parts.append(f"{order_power} ")
+            details_list.append(f"{order_power} л.с.")
 
+        if details_list:
+            text += "\n" + ", ".join(details_list)
+
+        info_parts.append(text)
     if order.get("url"):
-        info_parts.append(f"<b>🔗Ссылка на авто:</b> {order['url']}")
+        info_parts.append(f"\n<b>🔗Ссылка на авто:</b> {order['url']}")
     if order.get("opened_at"):
         info_parts.append(f"\n<b>📅 Создан:</b> {order.get('opened_at')}")
 
