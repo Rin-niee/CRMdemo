@@ -192,23 +192,10 @@ async def precheck_chat_bridge(message: Message, state: FSMContext):
     if not manager:
         await callback.answer("Осмотрщик не назначен.", show_alert=True)
         return
-    # group_user = get_all_users(manager)
-    # group = get_manager_group(group_user)
-    # thread_id = get_thread_information(group) if group else None
     kb = InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="📸 Загрузить осмотр", callback_data=f"start_photo_session_now:{order_id}")]]
     )
-    # if group:
     try:
-        # if thread_id:
-        #     hint = "\n\nВы можете ответить, нажмите кнопку ниже."
-        #     await message.bot.send_message(
-        #         group,
-        #         f"💬 Сообщение от администратора:\n{message.text}",#{hint}
-        #         reply_markup=kb, message_thread_id=thread_id,
-        #     )
-        # else:
-        # hint = "\n\nВы можете ответить, нажмите кнопку ниже."
         await message.bot.send_message(manager,
             f"💬 Сообщение от администратора:\n{message.text}", #{hint}
             reply_markup=kb,
@@ -216,8 +203,6 @@ async def precheck_chat_bridge(message: Message, state: FSMContext):
     except Exception as e:
         await callback.answer("Не удалось отправить сообщение в группу.", show_alert=True)
         print(f"Failed to send message to group {group}: {e}")
-    # else:
-    #     await message.answer("Отправлено осмотрщику.")
 
 
 @router.message(OrderStates.precheck_chat_manager, F.text & ~F.text.startswith('/'))

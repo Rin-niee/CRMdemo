@@ -12,8 +12,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Собираем статику в контейнере
 RUN python manage.py collectstatic --noinput
 
-# Продакшн сервер (или оставь runserver для дев)
 CMD ["gunicorn", "CRMdemo.wsgi:application", "--bind", "0.0.0.0:8000"]

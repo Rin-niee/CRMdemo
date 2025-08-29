@@ -11,6 +11,8 @@ urlpatterns = [
     path('bid/<int:pk>/', views.bid, name="bid"),
     path('bid/', views.create_bid, name="create_bid"),
 
+    # это url для заказов. они закрыты временно
+    
     # path('', views.all_orders, name="all_orders"),
     # path('order/', views.create_orders, name="create_orders"),
     # path('order/<int:pk>/', views.order, name="order"),

@@ -162,8 +162,7 @@ class bid(models.Model):
     engine = models.CharField(max_length=100, blank=True, null=True, verbose_name="Двигатель")
     power = models.CharField(max_length=100, blank=True, null=True, verbose_name="Мощность двигателя")
     transmission = models.CharField(max_length=100, blank=True, null=True, verbose_name="Коробка передач")
-
-    # photo = models.ManyToManyField(CarsPhoto, blank=True, null=True, verbose_name="Фото")
+    
     create_at = models.DateTimeField(auto_now_add=True)
     last_update = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disable', verbose_name="Статус заявки")

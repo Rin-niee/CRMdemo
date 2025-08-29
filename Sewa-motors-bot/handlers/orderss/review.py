@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto, InputMediaVideo
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import config
@@ -8,9 +8,20 @@ from handlers.admin.notifications import (
     send_files_to_admin,
     notify_admin_manager_decline,
 )
+from utils.file_handler import (
+    get_user_files,
+)
 import logging
-from utils.data import update_order_status, get_order_by_id, clear_manager_for_order, get_dealer_by_id
+from utils.data import (
+    update_order_status, 
+    get_order_by_id,
+    clear_manager_for_order,
+    get_dealer_by_id,
+    get_checklist_answers,
+    get_thread_information, 
+)
 
+from handlers.common.constans import MAX_FILES_TO_SEND
 router = Router()
 logger = logging.getLogger(__name__)
 
@@ -129,7 +140,7 @@ async def admin_confirm_order(callback: CallbackQuery, state: FSMContext):
             "Только администратор может подтверждать заказы!", show_alert=True
         )
         return
-
+    photographer_user_id = callback.from_user.id
     order_id = callback.data[14:]
     order = get_order_by_id(order_id)
     manager_id = order.get("manager_id") if order else None
@@ -142,7 +153,62 @@ async def admin_confirm_order(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         "✅ <b>Заказ подтверждён и завершён.</b>", parse_mode="HTML"
     )
+    allowed_groups = set(
+        uid
+        for uid in (config.get_allowed_groups() or [])
+        if isinstance(uid, int)
+    )
+    targets_groups = [
+            uid
+            for uid in allowed_groups
+        ]
+    order = get_order_by_id(order_id)
+    files = get_user_files(photographer_user_id, order_id)
 
+    checklist = get_checklist_answers(order_id)
+
+    header_text = (
+        f"<b>{order.get('brand', '')} {order.get('model', '')}</b>\n"
+        f"\n👤 Фотограф ID: {photographer_user_id}\n"
+        f"📁 Всего файлов: {len(files)}"
+    )
+
+    photos = [f for f in files if f.get("type") == "photo"]
+
+    cp1 = checklist.get("checklist_point1") if isinstance(checklist, dict) else None
+    cp2 = checklist.get("checklist_point2") if isinstance(checklist, dict) else None
+
+    def _fmt(val):
+        if val is None or str(val).strip() == "":
+            return "не указано"
+        return str(val)
+
+    q1_label = "Состояние бампера"
+    q2_label = "Уровень топлива в баке"
+    checklist_text = (
+        "📋 <b>Чеклист:</b>\n"
+        f"{q1_label}: {_fmt(cp1)}\n"
+        f"{q2_label}: {_fmt(cp2)}\n"
+    )
+    for uid in targets_groups:
+        thread_id = get_thread_information(uid)
+        try:
+            await callback.bot.send_message(uid, header_text, parse_mode="HTML", message_thread_id=thread_id)
+            if photos:
+                media_group = [
+                    InputMediaPhoto(media=FSInputFile(f["path"]))
+                    for f in photos[:MAX_FILES_TO_SEND]
+                ]
+                if media_group:
+                    await callback.bot.send_media_group(uid, media_group, message_thread_id=thread_id)
+
+            for f in [f for f in files if f.get("type") == "video"]:
+                await callback.bot.send_video(uid, FSInputFile(f["path"]), message_thread_id=thread_id)
+            await callback.bot.send_message(uid, checklist_text, parse_mode="HTML", message_thread_id=thread_id)
+            logger.info(f"reminder: sent to {uid} about open bids")
+        except Exception as e:
+            logger.error(f"reminder: failed to send to {uid}: {e}")
+            continue
     if manager_id:
         try:
             car = f"{(order or {}).get('brand','')} {(order or {}).get('model','')}".strip()

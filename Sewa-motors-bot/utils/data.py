@@ -458,14 +458,14 @@ def get_open_orders_older_than(min_age_seconds: int):
         ).fetchall()
 
 
-# import aiosqlite
+# import aiosqlite -- это функция для обновления БД. Она тестовая и должна быть здесь.
 
 # async def get_open_orders_older_than_async(min_age_seconds: int):
 #     """
 #     Получает открытые заказы старше указанного времени (асинхронно)
 #     """
 #     async with aiosqlite.connect("your_db.sqlite") as db:
-#         db.row_factory = aiosqlite.Row  # чтобы можно было обращаться как к словарю
+#         db.row_factory = aiosqlite.Row
 #         async with db.execute(
 #             """
 #             SELECT *

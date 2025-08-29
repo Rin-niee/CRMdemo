@@ -101,7 +101,7 @@ class CompaniesAdmin(admin.ModelAdmin):
         for company in queryset:
             company.is_approved = False
             company.save()
-            company.delete()  # удаляем сразу
+            company.delete()
     reject_company.short_description = "Отклонить компанию"
 
 

@@ -254,6 +254,7 @@ async def reminder_job(bot):
             )
             for uid in targets:
                 try:
+                    #это код для добавления карточки дилера в заявку. Он еще в разработке и отключен временно.
                     # if photo:
                     #     await bot.send_photo(
                     #     chat_id=uid,
@@ -395,15 +396,6 @@ async def send_files_to_admin(
         if admin_id is None:
             logger.error("Админ не найден")
             return
-        allowed_groups = set(
-            uid
-            for uid in (config.get_allowed_groups() or [])
-            if isinstance(uid, int)
-        )
-        targets_groups = [
-            uid
-            for uid in allowed_groups
-        ]
         order = get_order_by_id(order_id)
         files = get_user_files(photographer_user_id, order_id)
         if is_rework:
@@ -481,17 +473,6 @@ async def send_files_to_admin(
             f"\n👤 Фотограф ID: {photographer_user_id}\n"
             f"📁 Всего файлов: {len(files)}"
         )
-        for uid in targets_groups:
-            thread_id = get_thread_information(uid)
-            try:
-                await bot.send_message(uid, header_text1, parse_mode="HTML", message_thread_id=thread_id)
-                await bot.send_media_group(uid, media_group, message_thread_id=thread_id)
-                await bot.send_video(uid, FSInputFile(f["path"]), message_thread_id=thread_id)
-                await bot.send_message(uid, checklist_text, parse_mode="HTML", message_thread_id=thread_id)
-                logger.info(f"reminder: sent to {uid} about open bids")
-            except Exception as e:
-                logger.error(f"reminder: failed to send to {uid}: {e}")
-                continue
     except Exception as e:
         logger.error(f"Ошибка отправки заказа админу: {e}")
 

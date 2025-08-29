@@ -9,13 +9,6 @@ PHOTO_STAGES = [
         "required": True,
         "stage_num": 1,
     },
-    # {
-    #     "state": OrderStates.photo_video,
-    #     "title": "🎥 Обзорное видео",
-    #     "description": "Снимите короткое видео-обзор автомобиля",
-    #     "required": True,
-    #     "stage_num": 2,
-    # },
 ]
 
 TOTAL_STAGES = 1

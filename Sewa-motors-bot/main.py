@@ -18,21 +18,14 @@ logger = logging.getLogger(__name__)
 from utils.data import (
     get_my_order,
 )
-# debug_router = Router()
+debug_router = Router()
 
-# @debug_router.message()
-# async def echo_chat_id(message: types.Message):
-#     print(f"[DEBUG] chat_id = {message.chat.id}")
-#     await message.answer(f"chat_id этого чата: {message.chat.id}")
+@debug_router.message()
+async def echo_chat_id(message: types.Message):
+    print(f"[DEBUG] chat_id = {message.chat.id}")
+    await message.answer(f"chat_id этого чата: {message.chat.id}")
 
 router = Router()
-# @router.message()
-# async def get_thread_id(message: types.Message):
-#     if message.message_thread_id:
-#         await message.answer(f"ID этой темы: {message.message_thread_id}")
-#     else:
-#         await message.answer("Это сообщение не из темы.")
-
 async def main():
     """
     Главная функция запуска Telegram бота
@@ -76,8 +69,7 @@ async def main():
     # Роутер для работы с файлами
     dp.include_router(files.router)
     #МОЙ
-    # dp.include_router(debug_router)
-    dp.include_router(router)
+    dp.include_router(debug_router)
     # Удаляем webhook и настраиваем команды бота
     await bot.delete_webhook(drop_pending_updates=True)
 
@@ -86,7 +78,6 @@ async def main():
             BotCommand(command="start", description="Главное меню"),
             BotCommand(command="myorders", description=f"Мои заявки"),
             BotCommand(command="orderplan", description="Открытые заявки"),
-            # BotCommand(command="openorders", description="Открыть заказы"),
         ]
     )
 

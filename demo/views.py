@@ -4,13 +4,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
-# from telegram import InputMediaDocument
 from demo.serializers import *
-
-# from .workflow import WORKFLOW_STEPS
 import requests
 from demo.models import TGUsers
-# from io import BytesIO
 from django.contrib.auth import authenticate, login, logout
 
 BOT_TOKEN = "7519143065:AAGYsojc-fz9dxY4S1VFQE3UvOxICoNK7ns"
@@ -149,19 +145,6 @@ def upload_doc(request, pk):
     next_label = "финальный статус"
     if idx + 1 < len(allowed_fields):
         next_label = status_labels.get(allowed_fields[idx + 1], "следующий статус")
-    # if next_label == 'parking':
-    #     keyboard = get_order_info_keyboard(context="company")
-
-    #     for user in TGUsers.objects.all():
-    #         requests.post(
-    #             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-    #             data={
-    #                 "chat_id": user.chat_id,
-    #                 "text": f"Заказ #{status_obj.id} создан/обновлён. Вы можете начать съемку:",
-    #                 "parse_mode": "HTML",
-    #                 "reply_markup": keyboard.to_dict()  # превращаем InlineKeyboardMarkup в dict для Telegram API
-    #             }
-    #         )
     
     send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
     send_telegram_documents_group(uploaded_files, caption=f"Файлы по статусу: {label}")

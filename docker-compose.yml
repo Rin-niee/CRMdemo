@@ -38,10 +38,6 @@ services:
     restart: always
     env_file: ./Sewa-motors-bot/.env
     volumes:
-      # - ./Sewa-motors-bot:/usr/src/app
-      # - ./Sewa-motors-bot/storage:/usr/src/app/storage
-      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
-      # - storage:/app/storage
       - ./Sewa-motors-bot:/usr/src/app
       - storage:/usr/src/app/storage
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
