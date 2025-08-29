@@ -596,7 +596,7 @@ def set_checklist_answer_text(order_id: int, q_index: int, value_code: str):
 
 def save_arrival_time(order_id: int, arrival_time: datetime, manager_id: int, status: str):
     if arrival_time is None:
-        arrival_time_str = None
+        arrival_time_str = "Более 3х часов"
     else:
         arrival_time_str = arrival_time.strftime("%Y-%m-%d %H:%M:%S")
     with sqlite3.connect(DB_PATH) as conn:

@@ -319,7 +319,7 @@ async def reminder_job(bot):
 
 async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_time: datetime):
     try:
-        if arrival_time != 'more':
+        if arrival_time:
             arrival_time =  arrival_time + timedelta(hours=3)
             arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
             text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_str} (МСК)</b>."
