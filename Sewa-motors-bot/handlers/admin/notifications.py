@@ -324,7 +324,7 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
             arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
             text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_str} (МСК)</b>."
         else: 
-            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет более чем через 3 часа</b>."
+            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет более чем через 3 часа"
         allowed_groups = set(
             uid
             for uid in (config.get_allowed_groups() or [])
