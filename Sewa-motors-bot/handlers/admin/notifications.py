@@ -319,28 +319,17 @@ async def reminder_job(bot):
 
 async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_time: datetime):
     try:
-        arrival_time =  arrival_time + timedelta(hours=3)
-        arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
-        text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_str} (МСК)</b>."
-        # allowed_users = set(
-        #     uid
-        #     for uid in (config.get_allowed_users() or [])
-        #     if isinstance(uid, int)
-        # )
-
+        if arrival_time != 'more':
+            arrival_time =  arrival_time + timedelta(hours=3)
+            arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
+            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_str} (МСК)</b>."
+        else: 
+            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет более чем через 3 часа</b>."
         allowed_groups = set(
             uid
             for uid in (config.get_allowed_groups() or [])
             if isinstance(uid, int)
         )
-
-        # for uid in allowed_users:
-        #     try:
-        #         await bot.send_message(uid, text_manager, parse_mode="HTML")
-        #         logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
-        #     except Exception as e:
-        #         logger.error(f"reminder: failed to send manager info to {uid}: {e}")
-        #         continue
 
         for uid in allowed_groups:
             message_thread = get_thread_clients(uid)
@@ -401,16 +390,6 @@ async def reminder_open_bids(bot):
             for uid in allowed_users
             if uid and uid != admin_id and uid not in active_manager_ids
         ]
-
-        # allowed_groups = set(
-        #     uid
-        #     for uid in (config.get_allowed_groups() or [])
-        #     if isinstance(uid, int)
-        # )
-        # targets_groups = [
-        #     uid
-        #     for uid in allowed_groups
-        # ]
         orders = get_open_orders_with_opened_at()
 
         for uid in targets:
@@ -421,15 +400,6 @@ async def reminder_open_bids(bot):
                 logger.error(f"reminder: failed to send to {uid}: {e}")
                 continue
 
-
-        # for uid in targets_groups:
-        #     thread_id = get_thread_information(uid)
-        #     try:
-        #         await bot.send_message(uid, text, parse_mode="HTML", message_thread_id=thread_id, reply_markup=get_orders_with_opened_keyboard(orders))
-        #         logger.info(f"reminder: sent to {uid} about open bids")
-        #     except Exception as e:
-        #         logger.error(f"reminder: failed to send to {uid}: {e}")
-        #         continue
     except Exception as e:
         logger.error(f"reminder_open_bids error: {e}")
 

@@ -71,18 +71,22 @@ async def back_to_status_menu(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("order_time_"))
 async def order_time(callback: CallbackQuery, state: FSMContext):
-    # получаем id заказа
     data_parts = callback.data.split("_")
-    order_id = int(data_parts[2])  # order_time_{order_id}
+    order_id = int(data_parts[2])
 
-    # создаём inline-кнопки для выбора времени прибытия
-    times = [60, 90, 120, 150, 180]  # в минутах: 1ч, 1.5ч, 2ч, 2.5ч, 3ч
-    kb = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text=f"{t/60:.1f} ч", callback_data=f"set_arrival_{order_id}_{t}")]
-            for t in times
-        ]
-    )
+    times = [60, 90, 120, 150, 180, 'more']
+
+    inline_buttons = []
+    for t in times:
+        if t == 'more':
+            text = "Более 3 ч"
+            callback_data = f"set_arrival_{order_id}_more"
+        else:
+            text = f"{t/60:.1f} ч"
+            callback_data = f"set_arrival_{order_id}_{t}"
+        inline_buttons.append([InlineKeyboardButton(text=text, callback_data=callback_data)])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=inline_buttons)
 
     await callback.message.edit_reply_markup(reply_markup=kb)
 
@@ -91,31 +95,31 @@ async def order_time(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("set_arrival_"))
 async def set_arrival_time(callback: CallbackQuery, state: FSMContext):
-    # разбор callback_data: set_arrival_{order_id}_{minutes}
-    order_id_str, minutes_str = callback.data.rsplit("_", 2)[1:]
-    order_id = int(order_id_str)
-    minutes = int(minutes_str)
+    parts = callback.data.split("_")
+    order_id = int(parts[2])
+    choice = parts[3]
     manager_id = callback.from_user.id
-    # сохраняем время прибытия
     now = datetime.now()
-    arrival_time = now + timedelta(minutes=minutes)
-    
-    save_arrival_time(order_id, arrival_time, manager_id, status='progress')
 
-    # убираем кнопки выбора времени
+    if choice != "more":
+        minutes = int(choice)
+        arrival_time = now + timedelta(minutes=minutes)
+        note = arrival_time.strftime("%H:%M")
+        save_arrival_time(order_id, arrival_time, manager_id, status="progress")
+    else:
+        note = "более 3 часов"
+        save_arrival_time(order_id, None, manager_id, status="progress")
+
     await callback.message.edit_reply_markup(None)
 
-    # теперь имитируем клик на order_status_{order_id}, чтобы открыть детали
     order = get_order_by_id(order_id)
     if order:
-        # сразу обновляем selected_order
         await state.update_data(selected_order=order_id)
         await show_order_info(callback, order, state)
         bot = callback.bot
-        await notify_manager_departure(bot, order_id, manager_id, arrival_time)
+        await notify_manager_departure(bot, order_id, manager_id, note)
 
-    await callback.answer(f"Время прибытия установлено: {arrival_time.strftime('%H:%M')}")
-
+    await callback.answer(f"Время прибытия установлено: {note}")
 
 
 @router.callback_query(F.data.startswith("order_status_"))

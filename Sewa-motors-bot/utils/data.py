@@ -595,7 +595,10 @@ def set_checklist_answer_text(order_id: int, q_index: int, value_code: str):
     _exec(f"UPDATE bid SET {col} = ? WHERE id = ?", (value_code, order_id))
 
 def save_arrival_time(order_id: int, arrival_time: datetime, manager_id: int, status: str):
-    arrival_time_str = arrival_time.strftime("%Y-%m-%d %H:%M:%S")
+    if arrival_time is None:
+        arrival_time_str = None  # SQLite корректно запишет NULL
+    else:
+        arrival_time_str = arrival_time.strftime("%Y-%m-%d %H:%M:%S")
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             "UPDATE bid SET arrived_time = ?, manager_id = ?, status = ? WHERE id = ?",
