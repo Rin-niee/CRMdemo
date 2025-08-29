@@ -76,16 +76,11 @@ async def notify_managers_order_opened(bot, order):
     try:
         admin_id = config.get_admin_id()
         allowed_users = config.get_allowed_users() or []
-        # allowed_groups = config.get_allowed_groups() or []
 
         # Фильтруем только валидные ID пользователей
         allowed_users = [
             uid for uid in allowed_users if isinstance(uid, int) and uid > 100000
         ]
-
-        # allowed_groups = [
-        #     uid for uid in allowed_groups if isinstance(uid, int)
-        # ]
 
         # Получаем ID менеджеров, у которых уже есть заказы в работе
         active_progress_ids = set(get_progress_manager_ids())
@@ -143,39 +138,20 @@ async def notify_managers_order_opened(bot, order):
             except Exception as e:
                 logger.error(f"notify_opened: failed to send to {user_id}: {e}")
                 continue
-
-
-        # for user_id in allowed_groups:
-        #     if not user_id:
-        #         continue
-        #     if user_id == admin_id:
-        #         continue  # Пропускаем администратора
-        #     if user_id in active_progress_ids:
-        #         continue  # Пропускаем менеджеров с заказами в работе
-        #     try:
-        #         await bot.send_message(
-        #             user_id, text, parse_mode="HTML", reply_markup=open_kb
-        #         )
-        #         logger.info(f"notify_opened: sent to {user_id}")
-        #     except Exception as e:
-        #         logger.error(f"notify_opened: failed to send to {user_id}: {e}")
-        #         continue
     except Exception:
-        # Логируем ошибки, но не прерываем работу
         pass
 
 
 async def reminder_job(bot):
     try:
         open_orders = get_open_orders_older_than(60)
-        # logger.info(f"open_orders: {open_orders}")
         if not open_orders:
             return
 
         for idx, order in enumerate(open_orders):
             if idx > 0:
                 await asyncio.sleep(5)
-            if order.get("shown_to_bot") == 1:  # или True, в зависимости от типа поля
+            if order.get("shown_to_bot") == 1:
                 logger.info(f"reminder: order {order.get('id')} already shown, skipping")
                 continue
 
@@ -193,18 +169,6 @@ async def reminder_job(bot):
                 for uid in allowed_users
                 if uid and uid != admin_id and uid not in active_manager_ids
             ]
-
-            # allowed_groups = set(
-            #     [
-            #         uid
-            #         for uid in (config.get_allowed_groups() or [])
-            #         if isinstance(uid, int)
-            #     ]
-            # )
-            # targets_groups = [
-            #     uid
-            #     for uid in allowed_groups
-            # ]
             dealer_text = ""
             dealer_id = order.get("dealer_id")
 
@@ -254,13 +218,26 @@ async def reminder_job(bot):
                     if company.get("email"):
                         parts.append(f"E-mail: {company['email']}")
                     company_text = "\n".join(parts)
+            order_brand = order.get('brand','')
+            order_model = order.get('model','')
+            order_year = order.get('year','')
+            order_mileage = order.get('mileage','')
+            order_power = order.get('power','')
+            info_parts =[]
+            if order_brand and order_model:
+                info_parts.append(f"🚗 <b>{order_brand} {order_model}</b>\n")
+                if order_year:
+                    info_parts.append(f"{order_year} ")
+                if order_mileage:
+                    info_parts.append(f"{order_mileage} ")
+                if order_power:
+                    info_parts.append(f"{order_power} ")    
             text = (
-                "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n"
-                
-                f"🚗 <b>{order.get('brand','')} {order.get('model','')} \n</b>({order.get('year','')}г., {order.get('mileage','')}км, {order.get('power','')} л.с.)\n"
-                f"🆔 Заказ: {order.get('id')}\n" 
+                "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n" +
+                info_parts+
+                f"🆔 Заказ: {order.get('id')}\n" +
                 f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
-
+ 
                 "\nНажмите кнопку ниже, чтобы открыть заказ."
             )
             open_kb = InlineKeyboardMarkup(
@@ -268,7 +245,6 @@ async def reminder_job(bot):
                     [
                         InlineKeyboardButton(
                             text="📥 Взять заказ",
-                            # callback_data=f"order_status_{order.get('id')}",
                             callback_data=f"order_time_{order.get('id')}",
                         )
                     ]
@@ -294,19 +270,6 @@ async def reminder_job(bot):
                         f"reminder: failed to send to {uid} for order {order.get('id')}: {e}"
                     )
                     continue
-
-            # for uid in targets_groups:
-            #     thread_id = get_thread_information(uid)
-            #     try:
-            #         await bot.send_message(
-            #             uid, text, parse_mode="HTML", reply_markup=open_kb, message_thread_id=thread_id 
-            #         )
-            #         logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
-            #     except Exception as e:
-            #         logger.error(
-            #             f"reminder: failed to send to {uid} for order {order.get('id')}: {e}"
-            #         )
-            #         continue
             try:
                 mark_order_as_shown(order.get("id"))
                 logger.info(f"reminder: shown_to_bot set True for order {order.get('id')}")
