@@ -73,7 +73,7 @@ def get_orders_with_opened_keyboard(orders: list) -> InlineKeyboardMarkup:
 
     inline_buttons = []
     for o in orders:
-        text = f"{o.get('brand') or 'Без названия'} {o.get('model') or 'Без названия'} {o.get('year') or 'Без названия'}"
+        text = f"{o.get('brand') or 'Без названия'} {o.get('model') or ''} {o.get('year') or ''}"
         if o.get('manager_id'):
             text += f"— менеджер {o.get('manager_id')} выехал на съемку" 
         inline_buttons.append([InlineKeyboardButton(text=text, callback_data=f"order_time_{o.get('id')}")])
