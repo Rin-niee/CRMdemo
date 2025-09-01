@@ -194,6 +194,11 @@ async def reminder_job(bot):
                     if dealer.get("address"):
                         if str(dealer["address"]).strip() not in ("", "0", None):
                             parts.append(str(dealer["address"]))
+                    dealer_photo = dealer.get("photo")
+                    if dealer_photo:
+                        local_path = os.path.join("/usr/src/app/storage", dealer_photo)
+                        if os.path.exists(local_path):
+                            photo_obj = FSInputFile(local_path)
                     if parts:
                         dealer_text = "\n<b>👨‍💻 Дилер:</b>\n"+ "" + "\n".join(parts)
                     
@@ -240,7 +245,7 @@ async def reminder_job(bot):
                 f"🆔 Заказ: {order.get('id')}\n" +
                 f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
  
-                "\nНажмите кнопку ниже, чтобы открыть заказ."
+                "\n\nНажмите кнопку ниже, чтобы открыть заказ."
             )
             open_kb = InlineKeyboardMarkup(
                 inline_keyboard=[
@@ -255,18 +260,18 @@ async def reminder_job(bot):
             for uid in targets:
                 try:
                     #это код для добавления карточки дилера в заявку. Он еще в разработке и отключен временно.
-                    # if photo:
-                    #     await bot.send_photo(
-                    #     chat_id=uid,
-                    #     photo=photo,
-                    #     caption=text,
-                    #     parse_mode="HTML",
-                    #     reply_markup=open_kb,
-                    # )
-                    # else:
-                    await bot.send_message(
-                        uid, text, parse_mode="HTML", reply_markup=open_kb
+                    if photo:
+                        await bot.send_photo(
+                        chat_id=uid,
+                        photo=photo_obj,
+                        caption=text,
+                        parse_mode="HTML",
+                        reply_markup=open_kb,
                     )
+                    else:
+                        await bot.send_message(
+                            uid, text, parse_mode="HTML", reply_markup=open_kb
+                        )
                     logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
                 except Exception as e:
                     logger.error(

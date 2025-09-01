@@ -83,20 +83,6 @@ async def start_photo_session(callback: CallbackQuery, state: FSMContext):
 
     # Создаем клавиатуру для первого этапа
     markup = get_photo_stage_keyboard(stage_info)
-    try:
-        selected_order_id = selected_order
-        # Добавляем кнопку отказа от заказа
-        markup.inline_keyboard.append(
-            [
-                InlineKeyboardButton(
-                    text="🙅‍♂️ Отказаться от заказа",
-                    callback_data=f"decline_order_{selected_order_id}",
-                )
-            ]
-        )
-
-    except Exception:
-        pass
 
     # Отправляем сообщение с первым этапом
     await callback.message.answer(
@@ -175,17 +161,6 @@ async def next_stage(callback: CallbackQuery, state: FSMContext):
     markup = get_photo_stage_keyboard(stage_info)
     try:
         data = await state.get_data()
-        selected_order_id = data.get("selected_order")
-        if selected_order_id:
-            # Добавляем кнопку отказа от заказа
-            markup.inline_keyboard.append(
-                [
-                    InlineKeyboardButton(
-                        text="🙅‍♂️ Отказаться от заказа",
-                        callback_data=f"decline_order_{selected_order_id}",
-                    )
-                ]
-            )
 
     except Exception:
         pass

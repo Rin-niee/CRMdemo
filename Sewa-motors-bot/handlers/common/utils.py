@@ -1,6 +1,7 @@
+import os
 from typing import Optional, Dict
 import logging
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, FSInputFile
 from handlers.common.constans import STAGE_INDEX, PHOTO_STAGES, TOTAL_STAGES
 from handlers.orderss.states import OrderStates
 from utils.data import get_dealer_by_id, get_company_by_id
@@ -76,6 +77,11 @@ def build_order_info_text(order: Dict) -> str:
             if dealer.get("address"):
                 if str(dealer["address"]).strip() not in ("", "0", None):
                     parts.append(str(dealer["address"]))
+            dealer_photo = dealer.get("photo")
+            if dealer_photo:
+                local_path = os.path.join("/usr/src/app/storage", dealer_photo)
+                if os.path.exists(local_path):
+                    photo_obj = FSInputFile(local_path)
             if parts:
                 info_parts.append("\n<b>👨‍💻 Дилер:</b>\n" + "\n".join(parts))
     company_id = order.get("company_id")
@@ -121,8 +127,7 @@ def build_order_info_text(order: Dict) -> str:
             )
 
     info_parts.append("\nГотовы начать съемку автомобиля?")
-
-    return "\n".join(info_parts)
+    return "\n".join(info_parts), photo_obj
 
 
 def build_stage_message(stage: Dict) -> str:

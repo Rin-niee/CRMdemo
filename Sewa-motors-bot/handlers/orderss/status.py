@@ -104,17 +104,6 @@ async def order_status_action(callback: CallbackQuery, state: FSMContext):
                 stage_info = {**target_stage, "total_stages": TOTAL_STAGES}
 
                 markup = get_photo_stage_keyboard(stage_info)
-                try:
-                    markup.inline_keyboard.append(
-                        [
-                            InlineKeyboardButton(
-                                text="🙅‍♂️ Отказаться от заказа",
-                                callback_data=f"decline_order_{order_id}",
-                            )
-                        ]
-                    )
-                except Exception:
-                    pass
                 await callback.message.answer(
                     text=build_stage_message(target_stage),
                     reply_markup=markup,

@@ -246,12 +246,22 @@ def get_all_open_orders():
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM bid WHERE status = 'open'").fetchall()
 
-def get_all_open_orders_for_me(manager_id:int):
+def get_all_orders_for_me(manager_id:int):
     """
-    Получает все открытые заказы (статус 'open')
+    Получает все открытые заказы (статус 'open') для конкретного менеджера
     
     Returns:
-        Список всех открытых заказов
+        Список всех открытых заказов для менеджера
+    """
+    with get_db_connection() as conn:
+        return conn.execute("SELECT * FROM bid WHERE manager_id = ?" ,(manager_id,),).fetchall()
+
+def get_all_open_orders_for_me(manager_id:int):
+    """
+    Получает все заказы для конкретного менеджера
+    
+    Returns:
+        Список всех заказов менеджера
     """
     with get_db_connection() as conn:
         return conn.execute("SELECT * FROM bid WHERE status = 'open' and manager_id = ?" ,(manager_id,),).fetchall()
@@ -297,7 +307,7 @@ def get_open_orders_with_opened_at():
     """
     with get_db_connection() as conn:
         return conn.execute(
-            "SELECT * FROM bid WHERE status = 'open' AND opened_at IS NOT NULL ORDER BY opened_at DESC"
+            "SELECT * FROM bid WHERE status = 'open' AND manager_id is NULL AND opened_at IS NOT NULL ORDER BY opened_at DESC"
         ).fetchall()
     
 

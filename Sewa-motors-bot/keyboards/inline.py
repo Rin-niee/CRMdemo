@@ -22,6 +22,7 @@ def get_help_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="📋 Компании", callback_data="select_order"),
                 InlineKeyboardButton(text=f"📝 Мои заявки({my_orders})", callback_data="my_orders_menu"),
                 InlineKeyboardButton(text=f"🕧 Открытые заявки ({count})", callback_data="orderplan_menu"),
+                InlineKeyboardButton(text=f"🙅‍♂️ Отказаться от заказа", callback_data="all_my_orders"),
             ]
         ]
     )
@@ -77,6 +78,19 @@ def get_orders_with_opened_keyboard(orders: list) -> InlineKeyboardMarkup:
         if o.get('manager_id'):
             text += f"— менеджер {o.get('manager_id')} выехал на съемку" 
         inline_buttons.append([InlineKeyboardButton(text=text, callback_data=f"order_time_{o.get('id')}")])
+
+    return InlineKeyboardMarkup(inline_keyboard=inline_buttons)
+
+#меню отказа от заказа
+def get_orders_with_opened_keyboard_for_decline(orders: list) -> InlineKeyboardMarkup:
+    def _format_opened(val):
+        s = str(val or "")
+        return s.split(".")[0]
+
+    inline_buttons = []
+    for o in orders:
+        text = f"{o.get('brand') or 'Без названия'} {o.get('model') or ''} {o.get('year') or ''}"
+        inline_buttons.append([InlineKeyboardButton(text=text, callback_data=f"decline_order_{o.get('id')}")])
 
     return InlineKeyboardMarkup(inline_keyboard=inline_buttons)
 

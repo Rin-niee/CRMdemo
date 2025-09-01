@@ -13,12 +13,14 @@ from keyboards.inline import (
     get_main_menu_keyboard,
     get_order_info_keyboard,
     get_precheck_decision_keyboard,
+    get_orders_with_opened_keyboard_for_decline,
 )
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from utils.data import (
     get_order_by_id,
     get_orders_by_company,
     get_available_orders_by_company, 
+    get_all_orders_for_me, 
 )
 from handlers.orderss.review import AdminReworkStates
 from utils.data import clear_manager_for_order
@@ -49,6 +51,28 @@ async def order_plan_menu(callback: CallbackQuery):
         reply_markup=get_orders_with_opened_keyboard(orders),
     )
     await callback.answer()
+
+
+
+@router.callback_query(F.data == "all_my_orders")
+async def declare_menu(callback: CallbackQuery):
+    """
+    Показывает меню заказов пользователя от которого хочет отказаться.
+    """
+    user_id = callback.from_user.id
+
+    orders = get_all_orders_for_me(user_id)
+    if not orders:
+        await callback.message.edit_text("У вас нет заказов.")
+        await callback.answer()
+        return
+
+    await callback.message.edit_text(
+        "🙅‍♂️ Выберите, от какого из заказов вы хотите отказаться:",
+        reply_markup=get_orders_with_opened_keyboard_for_decline(orders),
+    )
+    await callback.answer()
+
 
 
 @router.callback_query(F.data.startswith("order_opened_"))
@@ -160,7 +184,7 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         order: Данные заказа
         state: Контекст FSM для определения контекста
     """
-    info_text = build_order_info_text(order)
+    info_text, photo = build_order_info_text(order)
 
     state_data = await state.get_data()
     context = state_data.get("context")
@@ -191,17 +215,6 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
             ]
         )
 
-        # Кнопка отказа от заказа (только для заказов в работе или на проверке)
-        if order.get("status") in ("progress", "review"):
-            buttons.append(
-                [
-                    InlineKeyboardButton(
-                        text="🙅‍♂️ Отказаться от заказа",
-                        callback_data=f"decline_order_{order['id']}",
-                    )
-                ]
-            )
-
     # Кнопка возврата к уведомлению
     if from_notification:
         buttons.append(
@@ -225,11 +238,11 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-        
-    await safe_edit_message(
-        callback, text=info_text, reply_markup=keyboard, parse_mode="HTML"
-    )
-    await callback.answer()
+    
+    if photo:
+        await callback.message.answer_photo(photo=photo, caption=info_text, reply_markup=keyboard, parse_mode="HTML")
+    else:
+        await callback.message.answer(info_text)
 
 
 @router.callback_query(F.data == "start_photo_session")
@@ -264,7 +277,7 @@ async def precheck_entry(callback: CallbackQuery, state: FSMContext):
     except Exception:
         pass
     
-    # Переходим к состоянию выбора решения предварительной проверки
+    # Выбор решения предварительной проверки
     await state.set_state(OrderStates.precheck_decision)
     await callback.message.answer(
         "👀 Первичная оценка авто: начните осмотр сразу или запросите консультацию у главного менеджера.",
@@ -272,38 +285,44 @@ async def precheck_entry(callback: CallbackQuery, state: FSMContext):
     )
     await callback.answer()
 
-
 @router.callback_query(F.data.startswith("decline_order_"))
-async def decline_order_start(callback: CallbackQuery, state: FSMContext):
-    """
-    Начинает процесс отказа от заказа
-    
-    Показывает форму для указания причины отказа.
-    
-    Args:
-        callback: Callback запрос с ID заказа
-        state: Контекст FSM
-    """
+async def decline_order_start(callback: CallbackQuery):
     order_id = callback.data[len("decline_order_") :]
-    await state.update_data(decline_order_id=order_id)
-    await state.set_state(AdminReworkStates.waiting_decline_reason)
-    await callback.message.answer("Укажите кратко причину отказа одним сообщением.")
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Да, отказаться",
+                    callback_data=f"confirm_decline_{order_id}",
+                ),
+                InlineKeyboardButton(
+                    text="❌ Нет, оставить",
+                    callback_data=f"cancel_decline_{order_id}",
+                ),
+            ]
+        ]
+    )
+
+    await callback.message.edit_text(
+        f"Вы точно хотите отказаться от заказа #{order_id}?",
+        reply_markup=keyboard,
+    )
     await callback.answer()
 
+@router.callback_query(F.data.startswith("confirm_decline_"))
+async def decline_order_confirm(callback: CallbackQuery):
+    order_id = callback.data[len("confirm_decline_") :]
 
-@router.message(AdminReworkStates.waiting_decline_reason, F.text)
-async def decline_order_reason(message, state: FSMContext):
-    data = await state.get_data()
-    order_id = data.get("decline_order_id")
-    reason = message.text or ""
     order = get_order_by_id(int(order_id))
     if not order:
-        await message.answer("Заказ не найден.")
-        await state.clear()
+        await callback.message.edit_text("Заказ не найден.")
+        await callback.answer()
         return
-    if order.get("manager_id") != message.from_user.id:
-        await message.answer("Вы не можете отказаться от этого заказа.")
-        await state.clear()
+
+    if order.get("manager_id") != callback.from_user.id:
+        await callback.message.edit_text("Вы не можете отказаться от этого заказа.")
+        await callback.answer()
         return
 
     clear_manager_for_order(str(order_id))
@@ -311,11 +330,23 @@ async def decline_order_reason(message, state: FSMContext):
 
     try:
         await notify_admin_manager_decline(
-            message.bot, order, message.from_user.id, reason
+            callback.bot, order, callback.from_user.id, reason=None
         )
     except Exception:
         pass
-    await message.answer(
-        "Вы отказались от заказа. Он снова доступен для взятия в работу."
+
+    await callback.message.edit_text(
+        f"Вы отказались от заказа #{order_id}. Он снова доступен для взятия."
     )
-    await state.clear()
+    await callback.answer()
+
+
+#отмена
+@router.callback_query(F.data.startswith("cancel_decline_"))
+async def decline_order_cancel(callback: CallbackQuery):
+    order_id = callback.data[len("cancel_decline_") :]
+
+    await callback.message.edit_text(
+        f"Отказ от заказа #{order_id} отменён."
+    )
+    await callback.answer()
