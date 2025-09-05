@@ -6,10 +6,26 @@ services:
     container_name: crm_django
     restart: always
     volumes:
+<<<<<<< Updated upstream
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
       - ./staticfiles:/usr/src/app/staticfiles
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+=======
+      - .:/usr/src/app
+      - static_volume:/usr/src/app/staticfiles
+      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+      - storage:/usr/src/app/storage
+    environment:
+      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+>>>>>>> Stashed changes
     networks:
       - crm_network
 
@@ -35,10 +51,51 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
     volumes:
+<<<<<<< Updated upstream
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
     networks:
       - crm_network
 
+=======
+      - ./Sewa-motors-bot:/usr/src/app
+      - storage:/usr/src/app/storage
+      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+    networks:
+      - crm_network
+      
+
+  bot2:
+    build: ./Sewa-motors-call
+    container_name: crm_bot_call
+    command: python main.py
+    working_dir: /usr/src/app
+    restart: always
+    env_file: ./Sewa-motors-call/.env
+    volumes:
+      - ./Sewa-motors-call:/usr/src/app
+      - storage:/usr/src/app/storage
+      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+    networks:
+      - crm_network
+
+  db:
+    image: postgres:15-alpine
+    container_name: crm_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - crm_network
+
+volumes:
+  static_volume: {}
+  storage:
+  pgdata:
+>>>>>>> Stashed changes
 networks:
   crm_network:
     driver: bridge

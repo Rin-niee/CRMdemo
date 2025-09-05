@@ -1,0 +1,125 @@
+
+import os
+import config
+# from utils.data import mark_order_as_shown
+import traceback
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from utils.data import (
+    get_company_by_id,
+    get_rings_orders,
+    get_thread_calls,
+    mark_order_as_shown_to_caller
+)
+from keyboards.main_kb import build_orders_keyboard
+import logging
+import asyncio
+logger = logging.getLogger(__name__)
+async def reminder_job(bot):
+    try:
+        rings_orders = get_rings_orders()
+        if not rings_orders:
+            return
+        # logger.info(rings_orders)
+        for idx, order in enumerate(rings_orders):
+            if idx > 0:
+                await asyncio.sleep(5)
+            if order.get("caller_saw") == 1:
+                logger.info(f"reminder: order {order.get('id')} already shown, skipping")
+                continue
+
+            allowed_groups = set(
+                [
+                    uid
+                    for uid in (config.get_allowed_groups() or [])
+                    if isinstance(uid, int)
+                ]
+            )
+            targets = [
+                uid
+                for uid in allowed_groups
+                if uid
+            ]
+            # logger.info(targets)
+            company_id = order.get("company_id")
+            if order.get("url_users"):
+                link_text = f"\n<b>🔗Ссылка на авто:</b> {order['url']}"
+            if company_id:
+                company = get_company_by_id(company_id)
+                if company:
+                    parts = [f"\n<b>🏢 Компания:</b>"]
+                    if company.get("name"):
+                        parts.append(f"Наименование: {company['name']}")
+                    if company.get("INN"):
+                        parts.append(f"ИНН: {company['INN']}")
+                    if company.get("OGRN"):
+                        parts.append(f"ОГРН: {company['OGRN']}")
+                    if company.get("address"):
+                        parts.append(f"Адрес:{company['address']}")
+                    if company.get("phone"):
+                        parts.append(f"Телефон:{company['phone']}")
+                    if company.get("email"):
+                        parts.append(f"E-mail: {company['email']}")
+                    company_text = "\n".join(parts)
+            text = (
+                "🔔 <b>Открыта новая заявка</b>\n\n" +
+                f"🆔 Заявка: {order.get('id')}\n" +
+                link_text + '\n' + company_text +
+                "\n\nПожалуйста, перейдите в чат бота для подробного просмотра\n\n"
+            )
+            for uid in targets:
+                try:
+                    thread_id = get_thread_calls(uid)
+                    await bot.send_message(
+                        uid, text, parse_mode="HTML", message_thread_id=thread_id
+                    )
+                    logger.info(f"reminder: sent to {uid} for order {order.get('id')}")
+                except Exception as e:
+                    logger.error(
+                        f"reminder: failed to send to {uid} for order {order.get('id')}: {e}"
+                    )
+                    continue
+            try:
+                mark_order_as_shown_to_caller(order.get("id"))
+                logger.info(f"reminder: shown_to_bot set True for order {order.get('id')}")
+            except Exception as e:
+                logger.error(f"reminder: failed to update shown_to_bot for order {order.get('id')}: {e}")
+
+                
+    except Exception as e:
+        logger.error(f"reminder_job top-level error: {e}\n{traceback.format_exc()}")
+
+
+async def reminder_open_bids(bot):
+    try:
+        open_orders = get_rings_orders()
+        count = len(open_orders)
+        if not open_orders:
+            return
+
+        text = (
+            f"🔔 Внимание! Есть открытые заявки.\n"
+            f"Количество открытых заявок на сегодня: <b> {count} </b>"
+        )
+        caller_id = config.get_caller_id()
+        allowed_users = set(
+            uid
+            for uid in (config.get_allowed_users() or [])
+            if isinstance(uid, int)
+        )
+        targets = [
+            uid
+            for uid in allowed_users
+            if uid and uid == caller_id
+        ]
+        
+        kb = build_orders_keyboard(open_orders)
+        for uid in targets:
+            try:
+                await bot.send_message(uid, text, parse_mode="HTML", reply_markup=kb)
+                logger.info(f"reminder: sent to {uid} about open bids")
+            except Exception as e:
+                logger.error(f"reminder: failed to send to {uid}: {e}")
+                continue
+
+    except Exception as e:
+        logger.error(f"reminder_open_bids error: {e}")
