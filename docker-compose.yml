@@ -1,20 +1,11 @@
-version: '3.8'
-
 services:
   web:
     build: .
     container_name: crm_django
     restart: always
     volumes:
-<<<<<<< Updated upstream
-      - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
-      - ./staticfiles:/usr/src/app/staticfiles
-    environment:
-      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
-=======
       - .:/usr/src/app
       - static_volume:/usr/src/app/staticfiles
-      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
       - storage:/usr/src/app/storage
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
@@ -23,9 +14,11 @@ services:
     depends_on:
       - db
     command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
->>>>>>> Stashed changes
+      sh -c "until pg_isready -h db -p 5432 -U crm_user;
+            do echo '⏳ Ждём Postgres...'; sleep 1; done &&
+            python manage.py makemigrations &&
+            python manage.py migrate --noinput &&
+            python manage.py runserver 0.0.0.0:8000"
     networks:
       - crm_network
 
@@ -37,29 +30,39 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./staticfiles:/usr/src/app/staticfiles
+      - static_volume:/usr/src/app/staticfiles
+      - storage:/usr/src/app/storage
     depends_on:
       - web
     networks:
       - crm_network
-
-  telegram_bot:
+  celery:
     build: .
-    container_name: crm_bot
-    restart: always
-    command: python manage.py python-telegram-bot
-    environment:
-      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+    command: sh -c "until nc -z redis 6379; do echo '⏳ Ждём Redis...'; sleep 1; done && celery -A CRMdemo worker --loglevel=info"
     volumes:
-<<<<<<< Updated upstream
-      - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
+      - .:/usr/src/app
+    depends_on:
+      - redis
+      - db
     networks:
       - crm_network
 
-=======
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - crm_network
+  bot:
+    build: ./Sewa-motors-bot
+    container_name: crm_bot
+    command: python main.py
+    working_dir: /usr/src/app
+    restart: always
+    env_file: ./Sewa-motors-bot/.env
+    volumes:
       - ./Sewa-motors-bot:/usr/src/app
       - storage:/usr/src/app/storage
-      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
     networks:
       - crm_network
       
@@ -74,12 +77,11 @@ services:
     volumes:
       - ./Sewa-motors-call:/usr/src/app
       - storage:/usr/src/app/storage
-      # - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
     networks:
       - crm_network
 
   db:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: crm_postgres
     restart: always
     environment:
@@ -95,7 +97,6 @@ volumes:
   static_volume: {}
   storage:
   pgdata:
->>>>>>> Stashed changes
 networks:
   crm_network:
     driver: bridge

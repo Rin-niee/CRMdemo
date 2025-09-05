@@ -15,7 +15,7 @@ main_kb = InlineKeyboardMarkup(
     ]
 )
 
-def build_orders_keyboard(orders, add_back_button=False):
+async def build_orders_keyboard(orders, add_back_button=False):
     """
     Формирует InlineKeyboardMarkup для списка заказов.
 
@@ -30,7 +30,7 @@ def build_orders_keyboard(orders, add_back_button=False):
 
     for order in orders:
         company_id = order.get('company_id')
-        company = get_company_info(company_id) if company_id else None
+        company = await get_company_info(company_id) if company_id else None
         company_name = company.get('name', 'Неизвестно') if company else 'Неизвестно'
         url = order.get('url_users', 'Неизвестно')
 

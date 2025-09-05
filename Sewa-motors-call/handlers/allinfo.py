@@ -16,7 +16,7 @@ async def show_order_info(callback: CallbackQuery, order: dict, state=None):
     try:
         order_text = f"🚗 Заказ #{order.get('id')}\n"
         order_text += f"URL: {order.get('url_users', 'Неизвестно')}\n"
-        order_company = get_company_info(order.get("company_id"))
+        order_company = await get_company_info(order.get("company_id"))
         order_text += f"Компания: {order_company.get('name', 'Неизвестно')}\n"
         order_text += f"ИНН: {order_company.get('INN', 'Неизвестно')}\n"
         order_text += f"ОРГН: {order_company.get('OGRN', 'Неизвестно')}\n"

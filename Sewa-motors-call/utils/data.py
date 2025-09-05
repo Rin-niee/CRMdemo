@@ -1,35 +1,8 @@
-import sqlite3
-from datetime import datetime, timedelta
-from config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 import asyncpg
-import asyncio
-
-
-def dict_factory(cursor, row):
-    """
-    Фабрика для создания словарей из результатов SQL запросов
-    
-    Преобразует строки БД в словари с названиями колонок как ключами
-    
-    Args:
-        cursor: Курсор SQLite
-        row: Строка результата запроса
-        
-    Returns:
-        Словарь с данными строки
-    """
-    return {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
-
+from config import DB_USER, DB_PASSWORD, DB_NAME, DB_HOST, DB_PORT
+from datetime import datetime
 
 async def get_db_connection():
-    """
-    Создает и возвращает соединение с базой данных
-    
-    Настраивает фабрику словарей для удобной работы с результатами
-    
-    Returns:
-        Соединение с SQLite базой данных
-    """
     conn = await asyncpg.connect(
         user=DB_USER,
         password=DB_PASSWORD,
@@ -37,168 +10,95 @@ async def get_db_connection():
         host=DB_HOST,
         port=DB_PORT
     )
-    conn.row_factory = dict_factory
     return conn
 
-#берем все заказы менеджера
+# 1. Взять компанию
+async def get_company_info(company_id: int):
+    conn = await get_db_connection()
+    row = await conn.fetchrow("SELECT * FROM companies WHERE id = $1", company_id)
+    await conn.close()
+    return dict(row) if row else None
 
-def get_my_orders(manager_id: int):
-    """
-    Получает все заказы указанного пользователя
-    
-    Args:
-        manager_id: ID пользователя
-        
-    Returns:
-        Список заказов компании
-    """
-    with get_db_connection() as conn:
-        return conn.execute(
-            "SELECT * FROM bid WHERE manager_id = ?", (manager_id,)
-        ).fetchall()
-    
-#взять компанию
-def get_company_info(company_id: int):
-    with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM companies WHERE id = ?", (company_id,)
-        ).fetchone()
+# 2. Данные заказа по id
+async def get_order_by_id(order_id: int):
+    conn = await get_db_connection()
+    row = await conn.fetchrow("SELECT * FROM bid WHERE id = $1", order_id)
+    await conn.close()
+    return dict(row) if row else None
 
-    if row:
-        return dict(row)
-    return None
-    
+# 3. Проставляем авто в наличии
+async def mark_order_in_stock(order_id: int):
+    conn = await get_db_connection()
+    await conn.execute("UPDATE bid SET in_stock = TRUE WHERE id = $1", order_id)
+    await conn.close()
 
-#берем все данные заказа
-def get_order_by_id(id: int):
-    """
-    Получает данные заказа по id
-    
-    Args:
-        id: ID пользователя
-        
-    Returns:
-        Данные заказа
-    """
-    with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM bid WHERE id = ?", (id,)
-        ).fetchone()
+# 4. Привязка дилера к заявке
+async def attach_dealer_to_bid(dealer_id: int, order_id: int):
+    conn = await get_db_connection()
+    await conn.execute("UPDATE bid SET dealer_id = $1 WHERE id = $2", dealer_id, order_id)
+    await conn.close()
 
-    if row:
-        return dict(row)
-    return None
+# 5. Проверяем дилера в наличии
+async def dealer_info_find(company_name: str):
+    conn = await get_db_connection()
+    row = await conn.fetchrow(
+        "SELECT id FROM dealers WHERE company_name = $1",
+        company_name
+    )
+    await conn.close()
+    return dict(row) if row else None
 
+# 6. Создаем дилера
+async def dealer_info_create(company_name: str, dealer_photo: str, order_id: int):
+    conn = await get_db_connection()
+    row = await conn.fetchrow(
+        "INSERT INTO dealers (company_name, photo) VALUES ($1, $2) RETURNING id",
+        company_name, dealer_photo
+    )
+    dealer_id = row["id"]
+    await conn.execute("UPDATE bid SET dealer_id = $1 WHERE id = $2", dealer_id, order_id)
+    await conn.close()
+    return dealer_id
 
-#Обновляем авто в наличии
+# 7. Заказы со статусом "ring"
+async def get_rings_orders():
+    conn = await get_db_connection()
+    rows = await conn.fetch(
+        "SELECT * FROM bid WHERE status = 'ring' AND dealer_id IS NULL"
+    )
+    await conn.close()
+    return [dict(r) for r in rows]
 
-def mark_order_in_stock(order_id: int):
-    """Проставляет флаг in_stock=True для заявки"""
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "UPDATE bid SET in_stock = 1 WHERE id = ?",
-            (order_id,)
-        )
-        conn.commit()
+# 8. Получаем компанию по id
+async def get_company_by_id(company_id: int):
+    conn = await get_db_connection()
+    row = await conn.fetchrow("SELECT * FROM companies WHERE id = $1", company_id)
+    await conn.close()
+    return dict(row) if row else None
 
+# 9. Получаем calls_id по tg_id
+async def get_thread_calls(tg_id: int):
+    conn = await get_db_connection()
+    row = await conn.fetchrow("SELECT calls_id FROM groups WHERE tg_id = $1", tg_id)
+    await conn.close()
+    return row["calls_id"] if row else None
 
-#Обновляем дилера
-def dealer_info_update(company_name: str, dealer_photo: str, order_id: int):
-    """Обновление данных о дилере"""
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "UPDATE dealers SET company_name = ?, photo = ? WHERE id = ?",
-            (company_name, dealer_photo, order_id)
-        )
-        conn.commit()
+# 10. Проставляем caller_saw
+async def mark_order_as_shown_to_caller(order_id: int):
+    conn = await get_db_connection()
+    await conn.execute("UPDATE bid SET caller_saw = TRUE WHERE id = $1", order_id)
+    await conn.close()
 
-#Проверяем дилера в наличии
-def dealer_info_find(company_name: str, dealer_photo: str, order_id: int):
-    """Поиск данных о дилере"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute(
-                "SELECT id FROM dealers WHERE company_name = ? AND photo = ? AND id = ?",
-                (company_name, dealer_photo, order_id)
-            )
-        row = cursor.fetchone()
-        return row
-
-#Создаем дилера
-def dealer_info_create(company_name: str, dealer_photo: str, order_id: int):
-    """Создаём дилера и привязываем к заявке"""
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        # создаём дилера (id автоинкремент)
-        cursor.execute(
-            "INSERT INTO dealers (company_name, photo) VALUES (?, ?)",
-            (company_name, dealer_photo)
-        )
-        dealer_id = cursor.lastrowid
-        cursor.execute(
-            "UPDATE bid SET dealer_id = ? WHERE id = ?",
-            (dealer_id, order_id)
-        )
-        conn.commit()
-
-def get_rings_orders():
-    """
-    Получает заказы со статусом прозвоны
-        
-    Returns:
-        Список старых открытых заказов
-    """
-    with get_db_connection() as conn:
-        return conn.execute(
-            """
-            SELECT *
-            FROM bid
-            WHERE status = 'ring' and dealer_id is NULL
-            """,
-        ).fetchall()
-    
-
-def get_company_by_id(company_id: int):
-    """
-    Получает информацию о компании по ID
-    
-    Args:
-        company_id: ID компании
-        
-    Returns:
-        Словарь с данными компании или None если не найдена
-    """
-    with get_db_connection() as conn:
-        return conn.execute("SELECT * FROM companies WHERE id = ?", (company_id,)).fetchone()
+# 11. Статус disable
+async def status_disable(order_id: int):
+    conn = await get_db_connection()
+    await conn.execute("UPDATE bid SET status = 'disable' WHERE id = $1", order_id)
+    await conn.close()
 
 
-
-def get_thread_calls(tg_id: int) -> int | None:
-    with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT calls_id FROM groups WHERE tg_id = ?",
-            (tg_id,)
-        ).fetchone()
-        if row:
-            return row["calls_id"]
-        return None
-    
-
-def mark_order_as_shown_to_caller(order_id: int):
-    """Проставляет флаг caller_saw=True для заявки"""
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "UPDATE bid SET caller_saw = 1 WHERE id = ?",
-            (order_id,)
-        )
-        conn.commit()
-
-
-#вОЗВРАЩАЕМ СТАТУС В DISABLE
-def status_disable(order_id: int):
-    """Обновление данных о статусе"""
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "UPDATE bid SET status = 'disable' WHERE id = ?",
-            (order_id)
-        )
-        conn.commit()
+# 12. Взять все заказы
+async def get_all_order():
+    conn = await get_db_connection()
+    row = await conn.fetchrow("SELECT * FROM bid WHERE status = 'ring'")
+    await conn.close()
+    return dict(row) if row else None

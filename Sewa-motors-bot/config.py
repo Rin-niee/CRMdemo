@@ -43,22 +43,32 @@ async def load_roles_from_db():
             host=DB_HOST,
             port=DB_PORT
         )
-        cursor = conn.cursor()
+        # cursor = conn.cursor()
 
-        # Получаем ID администратора (пользователь с is_admin = 1)
-        cursor.execute("SELECT id FROM users WHERE is_admin = 1 LIMIT 1")
-        row = cursor.fetchone()
-        _ADMIN_ID = row[0] if row else None
+        # # Получаем ID администратора (пользователь с is_admin = 1)
+        # cursor.execute("SELECT id FROM users WHERE is_admin = 1 LIMIT 1")
+        # row = cursor.fetchone()
+        # _ADMIN_ID = row[0] if row else None
 
-        # Получаем список всех разрешенных пользователей
-        cursor.execute("SELECT id FROM users")
-        _ALLOWED_USERS = [r[0] for r in cursor.fetchall()]
+        # # Получаем список всех разрешенных пользователей
+        # cursor.execute("SELECT id FROM users")
+        # _ALLOWED_USERS = [r[0] for r in cursor.fetchall()]
 
-        # Получаем список всех разрешенных групп
-        cursor.execute("SELECT tg_id FROM groups")
-        _ALLOWED_GROUPS = [r[0] for r in cursor.fetchall()]
+        # # Получаем список всех разрешенных групп
+        # cursor.execute("SELECT tg_id FROM groups")
+        # _ALLOWED_GROUPS = [r[0] for r in cursor.fetchall()]
 
-        conn.close()
+        row = await conn.fetchrow("SELECT id FROM users WHERE is_admin = True")
+        _ADMIN_ID = row["id"] if row else None
+
+        rows = await conn.fetch("SELECT id FROM users")
+        _ALLOWED_USERS = [r["id"] for r in rows]
+
+        rows = await conn.fetch("SELECT tg_id FROM groups")
+        _ALLOWED_GROUPS = [r["tg_id"] for r in rows]
+
+
+        await conn.close()
     except Exception as e:
         print(f"Ошибка загрузки ролей из БД: {e}")
         _ADMIN_ID = None
@@ -66,34 +76,34 @@ async def load_roles_from_db():
         _ALLOWED_GROUPS = []
 
 
-def get_admin_id():
+async def get_admin_id():
     """
     Возвращает ID администратора
     Перезагружает роли из БД перед возвратом
     """
-    load_roles_from_db()
+    await load_roles_from_db()
     return _ADMIN_ID
 
 
-def get_allowed_users():
+async def get_allowed_users():
     """
     Возвращает список всех разрешенных пользователей
     Перезагружает роли из БД перед возвратом
     """
-    load_roles_from_db()
+    await load_roles_from_db()
     return _ALLOWED_USERS
 
 
-def get_allowed_groups():
+async def get_allowed_groups():
     """
     Возвращает список всех разрешенных пользователей
     Перезагружает роли из БД перед возвратом
     """
-    load_roles_from_db()
+    await load_roles_from_db()
     return _ALLOWED_GROUPS
 
 
-def is_admin(user_id: int) -> bool:
+async def is_admin(user_id: int) -> bool:
     """
     Проверяет, является ли пользователь администратором
     
@@ -103,11 +113,11 @@ def is_admin(user_id: int) -> bool:
     Returns:
         True если пользователь администратор, False в противном случае
     """
-    admin_id = get_admin_id()
+    admin_id = await get_admin_id()
     return admin_id is not None and user_id == admin_id
 
 
-def is_authorized(user_id: int) -> bool:
+async def is_authorized(user_id: int) -> bool:
     """
     Проверяет, авторизован ли пользователь для работы с ботом
     
@@ -117,11 +127,11 @@ def is_authorized(user_id: int) -> bool:
     Returns:
         True если пользователь авторизован, False в противном случае
     """
-    allowed_users = get_allowed_users()
+    allowed_users = await get_allowed_users()
     return user_id in allowed_users
 
 
-def set_admin_id(user_id: int):
+async def set_admin_id(user_id: int):
     """
     Назначает пользователя администратором
     Сначала сбрасывает все права администратора, затем назначает нового
@@ -130,7 +140,13 @@ def set_admin_id(user_id: int):
         user_id: ID пользователя, которого назначают администратором
     """
     global _ADMIN_ID
-    conn = sqlite3.connect(DB_PATH)
+    conn = await asyncpg.connect(
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            host=DB_HOST,
+            port=DB_PORT
+    )
     cursor = conn.cursor()
 
     # Сбрасываем права администратора у всех пользователей
@@ -138,29 +154,35 @@ def set_admin_id(user_id: int):
     # Назначаем права администратора указанному пользователю
     cursor.execute("UPDATE users SET is_admin = 1 WHERE id = ?", (user_id,))
     conn.commit()
-    conn.close()
+    await conn.close()
 
     # Обновляем глобальную переменную
     _ADMIN_ID = user_id
 
 
-def remove_admin_id():
+async def remove_admin_id():
     """
     Убирает права администратора у всех пользователей
     Используется для сброса административных прав
     """
     global _ADMIN_ID
-    conn = sqlite3.connect(DB_PATH)
+    conn = await asyncpg.connect(
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME,
+            host=DB_HOST,
+            port=DB_PORT
+    )
     cursor = conn.cursor()
 
     # Сбрасываем права администратора у всех пользователей
     cursor.execute("UPDATE users SET is_admin = 0")
     conn.commit()
-    conn.close()
+    await conn.close()
 
     # Обновляем глобальную переменную
     _ADMIN_ID = None
 
 
 # Загружаем роли при импорте модуля
-load_roles_from_db()
+load_roles_from_db

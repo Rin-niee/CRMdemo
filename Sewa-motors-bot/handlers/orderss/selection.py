@@ -1,9 +1,7 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, FSInputFile
+from aiogram.types import CallbackQuery, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from typing import Dict
-from keyboards.inline import get_orders_with_opened_keyboard
-from utils.data import get_open_orders_with_opened_at, get_order_by_id
 from handlers.orderss.states import OrderStates
 import logging
 from handlers.common.utils import safe_edit_message, build_order_info_text
@@ -11,21 +9,20 @@ from keyboards.inline import (
     get_companies_keyboard,
     get_orders_keyboard,
     get_main_menu_keyboard,
-    get_order_info_keyboard,
     get_precheck_decision_keyboard,
     get_orders_with_opened_keyboard_for_decline,
+    get_orders_with_opened_keyboard,
 )
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from utils.data import (
     get_order_by_id,
-    get_orders_by_company,
     get_available_orders_by_company, 
-    get_all_orders_for_me, 
+    get_all_orders_for_me,
+    get_open_orders_with_opened_at, 
+    clear_manager_for_order,
+    update_order_status,
+    assign_manager_to_order
 )
-from handlers.orderss.review import AdminReworkStates
-from utils.data import clear_manager_for_order
 from handlers.admin.notifications import notify_admin_manager_decline, notify_manager_arrived
-from utils.data import update_order_status as _uos
 
 
 router = Router()
@@ -40,7 +37,7 @@ async def order_plan_menu(callback: CallbackQuery):
     Отображает заказы, которые были открыты недавно,
     для планирования работы на день.
     """
-    orders = get_open_orders_with_opened_at()
+    orders = await get_open_orders_with_opened_at()
     if not orders:
         await callback.message.edit_text("Нет недавно открытых открытых заказов.")
         await callback.answer()
@@ -61,7 +58,7 @@ async def declare_menu(callback: CallbackQuery):
     """
     user_id = callback.from_user.id
 
-    orders = get_all_orders_for_me(user_id)
+    orders = await get_all_orders_for_me(user_id)
     if not orders:
         await callback.message.edit_text("У вас нет заказов.")
         await callback.answer()
@@ -85,7 +82,7 @@ async def show_opened_order(callback: CallbackQuery, state: FSMContext):
         state: Контекст FSM для сохранения выбранного заказа
     """
     order_id = int(callback.data[len("order_opened_") :])
-    order = get_order_by_id(order_id)
+    order = await get_order_by_id(order_id)
 
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
@@ -106,7 +103,7 @@ async def select_company_menu(callback: CallbackQuery, state: FSMContext):
     """
     await state.set_state(OrderStates.selecting_company)
     await safe_edit_message(
-        callback, text="Выберите компанию:", reply_markup=get_companies_keyboard()
+        callback, text="Выберите компанию:", reply_markup=await get_companies_keyboard()
     )
     await callback.answer()
 
@@ -129,7 +126,7 @@ async def company_selected_callback(callback: CallbackQuery, state: FSMContext):
 
     user_id = callback.from_user.id
     # Получаем заказы, доступные для пользователя в выбранной компании
-    orders = get_available_orders_by_company(company_id, user_id)
+    orders = await get_available_orders_by_company(company_id, user_id)
     if not orders:
         await safe_edit_message(
             callback, "У этой компании пока нет заказов.", get_main_menu_keyboard()
@@ -161,7 +158,7 @@ async def order_selected_from_company(callback: CallbackQuery, state: FSMContext
 
     logger.info(f"Поиск заказа с ID: '{order_id}'")
 
-    order = get_order_by_id(order_id)
+    order = await get_order_by_id(order_id)
     if not order:
         logger.error(f"Заказ с ID '{order_id}' не найден")
         await callback.answer("Заказ не найден.", show_alert=True)
@@ -184,7 +181,7 @@ async def show_order_info(callback: CallbackQuery, order: Dict, state: FSMContex
         order: Данные заказа
         state: Контекст FSM для определения контекста
     """
-    info_text, photo = build_order_info_text(order)
+    info_text, photo = await build_order_info_text(order)
 
     state_data = await state.get_data()
     context = state_data.get("context")
@@ -263,17 +260,16 @@ async def precheck_entry(callback: CallbackQuery, state: FSMContext):
         return
 
     try:
-        from utils.data import update_order_status, assign_manager_to_order
         order_id = str(data.get("selected_order"))
-        order = get_order_by_id(int(order_id))
+        order = await get_order_by_id(int(order_id))
         order_id2 = order.get("id")
         manager_id = order.get("manager_id")
         bot = callback.bot
         if manager_id:
             await notify_manager_arrived(bot, order_id2, manager_id)
         # Обновляем статус заказа на "progress" и назначаем менеджера
-        update_order_status(order_id, "progress")
-        assign_manager_to_order(order_id, callback.from_user.id)
+        await update_order_status(order_id, "progress")
+        await assign_manager_to_order(order_id, callback.from_user.id)
     except Exception:
         pass
     
@@ -287,7 +283,7 @@ async def precheck_entry(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("decline_order_"))
 async def decline_order_start(callback: CallbackQuery):
-    order_id = callback.data[len("decline_order_") :]
+    order_id = int(callback.data[len("decline_order_") :])
 
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -314,7 +310,7 @@ async def decline_order_start(callback: CallbackQuery):
 async def decline_order_confirm(callback: CallbackQuery):
     order_id = callback.data[len("confirm_decline_") :]
 
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     if not order:
         await callback.message.edit_text("Заказ не найден.")
         await callback.answer()
@@ -325,8 +321,8 @@ async def decline_order_confirm(callback: CallbackQuery):
         await callback.answer()
         return
 
-    clear_manager_for_order(str(order_id))
-    _uos(str(order_id), "open")
+    await clear_manager_for_order(int(order_id))
+    await update_order_status(int(order_id), "open")
 
     try:
         await notify_admin_manager_decline(

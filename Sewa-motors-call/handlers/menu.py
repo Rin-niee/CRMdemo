@@ -8,7 +8,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from utils.data import (
     get_order_by_id,
     mark_order_in_stock,
-    dealer_info_update,
+    attach_dealer_to_bid,
     dealer_info_find,
     dealer_info_create,
     get_rings_orders,
@@ -38,14 +38,14 @@ async def back_to_main(callback: CallbackQuery):
 #вызов всех заказов пользователя
 @router.callback_query(lambda c: c.data == "my_requests")
 async def my_requests_cb(callback: types.CallbackQuery):
-    orders = get_rings_orders()
+    orders = await get_rings_orders()
 
     if not orders:
         await callback.message.edit_text("У вас пока нет заявок.")
         await callback.answer()
         return
 
-    kb = build_orders_keyboard(orders, add_back_button=True)
+    kb = await build_orders_keyboard(orders, add_back_button=True)
 
     await callback.message.edit_text("Ваши заявки:", reply_markup=kb)
     await callback.answer()
@@ -56,7 +56,7 @@ async def order_details_cb(callback: CallbackQuery):
     try:
         
         order_id = int(callback.data.split("_")[1])
-        order = get_order_by_id(order_id)
+        order = await get_order_by_id(order_id)
         # logger.info("DEBUG CALLBACK: %s", order)
         if not order:
             await callback.message.answer("Заказ не найден.")
@@ -109,13 +109,13 @@ class DealerInfo(StatesGroup):
 @router.callback_query(F.data.startswith("confirm_auto_"))
 async def decline_order_confirm(callback: types.CallbackQuery, state: FSMContext):
     order_id = int(callback.data[len("confirm_auto_"):])
-    order = get_order_by_id(order_id)
+    order = await get_order_by_id(order_id)
     if not order:
         await callback.message.edit_text("Заказ не найден.")
         await callback.answer()
         return
 
-    mark_order_in_stock(order_id)
+    await mark_order_in_stock(order_id)
 
     await callback.message.edit_text(
         f"Пожалуйста, отправьте фото дилера к заказу #{order_id}."
@@ -190,11 +190,12 @@ async def dealer_name_received(message: types.Message, state: FSMContext):
     dealer_photo = data.get("dealer_photo")
     dealer = data.get("dealer_id")
 
-    if dealer_info_find(company_name, dealer_photo, dealer):
-        dealer_info_update(company_name, dealer_photo, dealer)
-        await message.answer(f"Информация о дилере для заказа #{order_id} сохранена!")
+    dealer_id = await dealer_info_find(company_name)
+    if dealer_id:
+        await attach_dealer_to_bid(dealer_id, order_id)
+        await message.answer(f"Дилер найден и прикреплён к заказу #{order_id}!")
     else:
-        dealer_info_create(company_name, dealer_photo, order_id)
+        await dealer_info_create(company_name, dealer_photo, order_id)
         await message.answer(f"Информация о дилере для заказа #{order_id} создана!")
 
     await state.clear()
@@ -203,7 +204,7 @@ async def dealer_name_received(message: types.Message, state: FSMContext):
 @router.callback_query(F.data.startswith("cancel_auto_"))
 async def decline_order_cancel(callback: CallbackQuery):
     order_id = callback.data[len("cancel_auto_") :]
-    status_disable(order_id)
+    await status_disable(order_id)
     await callback.message.edit_text(
         f"Заказ #{order_id} закрыт."
     )

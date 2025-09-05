@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from .models import *
 
@@ -30,13 +31,17 @@ class OrdersSerializer(serializers.ModelSerializer):
         client_data = validated_data.pop('client')
         client = Client.objects.create(**client_data)
         status_obj = Status_orders.objects.create(current_status='payment')
-        order = Order.objects.create(client=client, status=status_obj, **validated_data)
+        order = order.objects.create(client=client, status=status_obj, **validated_data)
         return order
 
 
+class BidsSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False
+    )
+    user_username = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
 
-<<<<<<< Updated upstream
-=======
     class Meta:
         model = bid
         fields = "__all__"
@@ -116,4 +121,3 @@ class CompanySerializer(serializers.ModelSerializer):
         return company
     
     
->>>>>>> Stashed changes

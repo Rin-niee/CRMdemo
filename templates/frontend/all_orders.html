@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Все заказы</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         /* Единый светлый фон и базовая типографика */
         body {
@@ -239,9 +241,70 @@
     </style>
 </head>
 <body>
-    <div class="page-header">
-        <h1 class="page-title">Все заказы</h1>
+<div style="text-align: right;margin: 20px;font-weight: bold;color: #8B0000;display: flex;justify-content: space-between;" id="current-user">
+    
+    <div style="font-size: 20px;" class ='headers' >{% if user.is_authenticated %}
+        {{ user.username }}</div>
+        <div class = 'header_two'><a href="/bid/all/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
+            <a href="/company/all/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К компаниям</a>
+        <button id="logout-btn" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">Выйти</button>
+    {% else %}
+        Вы не авторизованы
+        <a href="/bid/all/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
+        <a href="/company/all/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К компаниям</a>
+    {% endif %}</div>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+async function logoutUser() {
+    const csrfToken = getCookie('csrftoken');
+    const response = await fetch("/api/logout/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken
+        },
+        credentials: "include"
+    });
+
+    if (response.ok) {
+        // Перезагружаем страницу или обновляем блок
+        window.location.reload();
+    } else {
+        alert("Ошибка при выходе");
+    }
+}
+
+// Навешиваем обработчик только если кнопка есть
+const logoutBtn = document.getElementById("logout-btn");
+if (logoutBtn) {
+    logoutBtn.addEventListener("click", logoutUser);
+}
+</script>
+
+<div class="page-header">
+    <h1 class="page-title">Все заказы</h1>
+    {% if not user.is_authenticated %}
+    <div style="display: flex; justify-content: flex-start; gap: 10px; margin-top: 18px;">
+        <a href="/registration/" class="action-btn secondary-btn" style="min-width:120px;">📝 Регистрация</a>
+        <a href="/login/" class="action-btn secondary-btn" style="min-width:120px;">🔑 Вход</a>
     </div>
+    {% endif %}
+</div>
 
     <div class="create-order-section">
         <a href="/order/" class="create-btn">+ Создать новый заказ</a>

@@ -6,12 +6,6 @@ gunicorn==21.2.0
 python-telegram-bot==20.7
 Pillow==10.1.0
 whitenoise==6.6.0
-<<<<<<< Updated upstream
-
-
-
-
-=======
 aiofiles==24.1.0
 aiogram==3.21.0
 aiohappyeyeballs==2.6.1
@@ -46,4 +40,5 @@ uvicorn==0.35.0
 yarl==1.20.1
 aiosqlite==0.21.0
 asyncpg>=0.29.0
->>>>>>> Stashed changes
+celery>=5.3,<6.0
+redis>=5.0.0

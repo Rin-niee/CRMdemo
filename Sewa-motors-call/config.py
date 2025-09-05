@@ -32,10 +32,6 @@ _ALLOWED_USERS = []     # Список разрешенных пользоват
 _ALLOWED_GROUPS = []     # Список разрешенных пользователей
 
 async def load_roles_from_db():
-    """
-    Загружает роли пользователей из базы данных
-    Обновляет глобальные переменные _CALLER_ID и _ALLOWED_USERS
-    """
     global _CALLER_ID, _ALLOWED_USERS, _ALLOWED_GROUPS
     try:
         conn = await asyncpg.connect(
@@ -45,71 +41,52 @@ async def load_roles_from_db():
             host=DB_HOST,
             port=DB_PORT
         )
-        cursor = conn.cursor()
+        rows = await conn.fetch("SELECT id FROM users WHERE is_caller = True")
+        _CALLER_ID = [r["id"] for r in rows]
 
-        # Получаем ID прозвонщика (пользователь с is_admin = 1)
-        cursor.execute("SELECT id FROM users WHERE is_caller = 1")
-        row = cursor.fetchone()
-        _CALLER_ID = row[0] if row else None
+        rows = await conn.fetch("SELECT id FROM users")
+        _ALLOWED_USERS = [r["id"] for r in rows]
 
-        # Получаем список всех разрешенных пользователей
-        cursor.execute("SELECT id FROM users")
-        _ALLOWED_USERS = [r[0] for r in cursor.fetchall()]
+        rows = await conn.fetch("SELECT tg_id FROM groups")
+        _ALLOWED_GROUPS = [r["tg_id"] for r in rows]
 
-        # Получаем список всех разрешенных групп
-        cursor.execute("SELECT tg_id FROM groups")
-        _ALLOWED_GROUPS = [r[0] for r in cursor.fetchall()]
-
-        conn.close()
+        await conn.close()
     except Exception as e:
         print(f"Ошибка загрузки ролей из БД: {e}")
-        _CALLER_ID = None
+        _CALLER_ID = []
         _ALLOWED_USERS = []
         _ALLOWED_GROUPS = []
 
-
-def get_caller_id():
+async def get_caller_id():
     """
     Возвращает ID администратора
     Перезагружает роли из БД перед возвратом
     """
-    load_roles_from_db()
+    await load_roles_from_db()
     return _CALLER_ID
 
 
-def get_allowed_users():
+async def get_allowed_users():
     """
     Возвращает список всех разрешенных пользователей
     Перезагружает роли из БД перед возвратом
     """
-    load_roles_from_db()
+    await load_roles_from_db()
     return _ALLOWED_USERS
 
 
-def get_allowed_groups():
+
+
+async def get_allowed_groups():
     """
     Возвращает список всех разрешенных пользователей
     Перезагружает роли из БД перед возвратом
     """
-    load_roles_from_db()
+    await load_roles_from_db()
     return _ALLOWED_GROUPS
 
 
-def is_admin(user_id: int) -> bool:
-    """
-    Проверяет, является ли пользователь администратором
-    
-    Args:
-        user_id: ID пользователя для проверки
-        
-    Returns:
-        True если пользователь администратор, False в противном случае
-    """
-    caller_id = get_caller_id()
-    return caller_id is not None and user_id == caller_id
-
-
-def is_authorized(user_id: int) -> bool:
+async def is_authorized(user_id: int) -> bool:
     """
     Проверяет, авторизован ли пользователь для работы с ботом
     
@@ -119,9 +96,9 @@ def is_authorized(user_id: int) -> bool:
     Returns:
         True если пользователь авторизован, False в противном случае
     """
-    allowed_users = get_allowed_users()
+    allowed_users = await get_allowed_users()
     return user_id in allowed_users
 
 
-# Загружаем роли при импорте модуля
-load_roles_from_db()
+# # Загружаем роли при импорте модуля
+load_roles_from_db

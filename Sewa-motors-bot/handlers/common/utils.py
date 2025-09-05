@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from typing import Optional, Dict
 import logging
@@ -30,7 +31,7 @@ def get_next_stage(current_state) -> Optional[Dict]:
     return None
 
 
-def build_order_info_text(order: Dict) -> str:
+async def build_order_info_text(order: Dict) -> str:
     info_parts =[]
     order_brand = order.get('brand','')
     order_model = order.get('model','')
@@ -54,11 +55,14 @@ def build_order_info_text(order: Dict) -> str:
     if order.get("url"):
         info_parts.append(f"\n<b>🔗Ссылка на авто:</b> {order['url']}")
     if order.get("opened_at"):
-        info_parts.append(f"\n<b>📅 Создан:</b> {order.get('opened_at')}")
+        date = order.get('opened_at')
+        # date_data = datetime.fromisoformat(date) 
+        formatted = date.strftime("%d.%m.%Y %H:%M:%S")
+        info_parts.append(f"\n<b>📅 Создан:</b> {formatted}")
 
     dealer_id = order.get("dealer_id")
     if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
+        dealer = await get_dealer_by_id(dealer_id)
         logger.info(f"dealer: {dealer}")
         if dealer:
             parts = []
@@ -87,7 +91,7 @@ def build_order_info_text(order: Dict) -> str:
                 info_parts.append("\n<b>👨‍💻 Дилер:</b>\n" + "\n".join(parts))
     company_id = order.get("company_id")
     if company_id:
-        company = get_company_by_id(company_id)
+        company = await get_company_by_id(company_id)
         if company:
             info_parts.append(
                 "\n🏢<b> Компания: </b>\n" +
