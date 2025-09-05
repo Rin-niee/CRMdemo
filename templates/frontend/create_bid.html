@@ -1,0 +1,278 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Создать заявку</title>
+    
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f5f5f5;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .card {
+            background: #fff;
+            border: 2px solid #8B0000;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.1);
+        }
+        .card-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #8B0000;
+        }
+        .card-header h1 {
+            color: #8B0000;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .toggle-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0 20px;
+        }
+        .toggle-label {
+            color: #8B0000;
+            font-weight: 600;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8B0000;
+            font-weight: 600;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #8B0000;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+        }
+        .btn {
+            display: inline-block;
+            background: #8B0000;
+            color: #fff;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid #8B0000;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #fff;
+            color: #8B0000;
+            transform: scale(1.05);
+        }
+    </style>
+    <!-- <script>
+        function toggleForm() {
+            const type = document.getElementById('bidType').checked;
+            document.getElementById('carForm').style.display = type ? 'block' : 'none';
+            document.getElementById('urlForm').style.display = type ? 'none' : 'block';
+        }
+        window.onload = function() {
+            toggleForm();
+        }
+    </script> -->
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Создать заявку</h1>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto;">← К списку заявок</a>
+                <a href="/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto; margin-left: 10px;">🏠 На главную</a>
+            </div>
+            <div class="toggle-section">
+                <select class="btn" id="bidTypeSelect" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; width: auto;" >
+                    <option value="car">Авто</option>
+                    <option value="url">Ссылка</option>
+                </select>
+            </div>
+            <form id="carForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="brand">Марка</label>
+                    <input type="text" id="brand" name="brand" placeholder="Марка авто" required>
+                </div>
+                <div class="form-group">
+                    <label for="model">Модель</label>
+                    <input type="text" id="model" name="model" placeholder="Модель авто" required>
+                </div>
+                <div class="form-group">
+                    <label for="year">Год выпуска</label>
+                    <input type="number" id="year" name="year" min="1900" max="2100" placeholder="Год" required>
+                </div>
+                <div class="form-group">
+                    <label for="drive_type">Тип привода</label>
+                    <input type="text" id="drive_type" name="drive_type" placeholder="Передний, полный..." required>
+                </div>
+                <div class="form-group">
+                    <label for="engine">Объем двигателя</label>
+                    <input type="text" id="engine" name="engine" placeholder="Объем, тип" required>
+                </div>
+                <div class="form-group">
+                    <label for="power">Мощность</label>
+                    <input type="text" id="power" name="power" placeholder="л.с." required>
+                </div>
+                <div class="form-group">
+                    <label for="transmission">КПП</label>
+                    <input type="text" id="transmission" name="transmission" placeholder="Автомат, механика..." required>
+                </div>
+                <button type="submit" class="btn">Отправить заявку</button>
+            </form>
+            <form id="urlForm" method="post" style="display:none;">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="url">Ссылка на авто</label>
+                    <input type="url" id="url" name="url" placeholder="Вставьте ссылку">
+                </div>
+                <button type="submit" class="btn">Отправить заявку</button>
+            </form>
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('bidTypeSelect');
+    const carForm = document.getElementById('carForm');
+    const urlForm = document.getElementById('urlForm');
+
+    function toggleForm() {
+        carForm.style.display = select.value === 'car' ? 'block' : 'none';
+        urlForm.style.display = select.value === 'url' ? 'block' : 'none';
+    }
+
+    select.addEventListener('change', toggleForm);
+
+    toggleForm();
+});
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    document.getElementById('urlForm').addEventListener("submit", async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData();
+
+        formData.append("url_users", document.getElementById("url").value);
+        const csrfToken = getCookie('csrftoken');
+
+        const response = await fetch("/api/bid/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Заявка создана!");
+            window.location.href = "/";
+        } else {
+            alert("Ошибка: " + JSON.stringify(result));
+        }
+    });
+    document.getElementById('carForm').addEventListener("submit", async function(e) {
+        e.preventDefault();
+        e.preventDefault();
+
+        const requiredFields = ["brand", "model", "year", "drive_type", "engine", "power", "transmission"];
+        for (let id of requiredFields) {
+            const value = document.getElementById(id).value.trim();
+            if (!value) {
+                alert("Заполните все обязательные поля!");
+                return;
+            }
+        }
+        const formData = new FormData();
+
+        formData.append("brand", document.getElementById("brand").value);
+        formData.append("model", document.getElementById("model").value);
+        formData.append("year", document.getElementById("year").value);
+        formData.append("drive_type", document.getElementById("drive_type").value);
+        formData.append("engine", document.getElementById("engine").value);
+        formData.append("power", document.getElementById("power").value);
+        formData.append("transmission", document.getElementById("transmission").value);
+
+        // // добавляем все фото
+        // const photos = document.getElementById("photo").files;
+        // for (let i = 0; i < photos.length; i++) {
+        //     formData.append("photo", photos[i]);  
+        // }
+
+        const csrfToken = getCookie('csrftoken');
+
+        const response = await fetch("/api/bid/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Заявка создана!");
+            window.location.href = "/";
+        } else {
+            alert("Ошибка: " + JSON.stringify(result));
+        }
+    });
+</script>
+
+        </div>
+    </div>
+</body>
+</html>

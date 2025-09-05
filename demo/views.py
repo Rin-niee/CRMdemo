@@ -1,16 +1,75 @@
 from django.shortcuts import get_object_or_404, render
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, parser_classes
-from rest_framework.parsers import MultiPartParser, FormParser
-from telegram import InputMediaDocument
-from demo.serializers import *
 from rest_framework import status
-from .workflow import WORKFLOW_STEPS
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, parser_classes, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from demo.serializers import *
 import requests
 from demo.models import TGUsers
-from io import BytesIO
-
+from django.contrib.auth import authenticate, login, logout
+from demo.tasks import *
 BOT_TOKEN = "7519143065:AAGYsojc-fz9dxY4S1VFQE3UvOxICoNK7ns"
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def ClientRegister(request):
+    data = request.data
+    data["role"] = "client"
+    serializer = UserRegisterSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Пользователь создан"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def user_login(request):
+    serializer = UserLoginSerializer(data=request.data)
+    if serializer.is_valid():
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+
+        user = authenticate(username=username, password=password)
+        if user:
+            login(request, user) 
+            return Response({
+                "message": "Успешный вход",
+                "user_id": user.id,
+                "role": user.role
+            }, status=status.HTTP_200_OK)
+        return Response({"error": "Неверный логин или пароль"}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    return Response({
+        "username": request.user.username,
+        "id": request.user.id,
+        "role": request.user.role
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def user_logout(request):
+    logout(request)
+    return Response({"message": "Вы вышли из аккаунта"}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def ManagerRegister(request):
+    if not request.user.is_staff:
+        return Response({"error": "Ты не админ"}, status=status.HTTP_403_FORBIDDEN)
+
+    data = request.data
+    data["role"] = "manager"
+    serializer = UserRegisterSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Менеджер создан"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 def create_order(request):
@@ -23,7 +82,7 @@ def create_order(request):
 
 @api_view(['GET'])
 def all_orders(request):
-    orders = Order.objects.all()
+    orders = order.objects.all()
     serializer = OrdersSerializer(orders, many=True)
     return Response(serializer.data)
 
@@ -86,7 +145,7 @@ def upload_doc(request, pk):
     next_label = "финальный статус"
     if idx + 1 < len(allowed_fields):
         next_label = status_labels.get(allowed_fields[idx + 1], "следующий статус")
-
+    
     send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
     send_telegram_documents_group(uploaded_files, caption=f"Файлы по статусу: {label}")
 
@@ -146,3 +205,86 @@ def send_telegram_documents_group(file_objs, caption=None):
             data=data,
             files=files_payload
         )
+import logging
+logger = logging.getLogger(__name__)
+
+@api_view(['POST'])
+def create_bid(request):
+    serializer = BidsSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        bid_instance = serializer.save()
+        url = request.data.get("url_users")
+        logger.info(f"ДФДДФФДФД, {bid_instance.id}, {url}")
+        if url:
+            fetch_car_data_task.delay(bid_instance.id, [url])
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_bid(request):
+    bids = bid.objects.filter(user=request.user)
+    serializer = BidsSerializer(bids, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def bid_one(request, pk):
+    bid_one = get_object_or_404(bid, pk=pk)
+    serializer = BidsSerializer(bid_one)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_company(request):
+    serializer = CompanySerializer(data = request.data, context={'request': request})
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status =status.HTTP_201_CREATED)
+    else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def all_company(request):
+    user_comp = user_company.objects.filter(user_id=request.user).first()
+    if user_comp and user_comp.company_id and user_comp.company_id.is_approved:
+        serializer = CompanySerializer(user_comp.company_id, context={'request': request})
+        return Response([serializer.data])
+    else:
+        return Response([])
+
+
+@api_view(['GET'])
+def company(request, pk):
+    com_one = get_object_or_404(Companies, pk=pk)
+    serializer = CompanySerializer(com_one, context={'request': request})
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def company_add(request):
+    inn = request.data.get("INN")
+    password = request.data.get("password")
+
+    try:
+        company = Companies.objects.get(INN=inn)
+    except Companies.DoesNotExist:
+        return Response({"error": "Компания с таким ИНН не найдена"}, status=status.HTTP_404_NOT_FOUND)
+
+    if company.code != password:
+        return Response({"error": "Неверный пароль"}, status=status.HTTP_400_BAD_REQUEST)
+
+    user_company.objects.get_or_create(user_id=request.user,company_id=company)
+
+    return Response({"message": f"Вы присоединились к компании {company.name}"})
+
+
+@api_view(['DELETE'])
+def remove_employee(request, company_id, user_id):
+    try:
+        uc = user_company.objects.get(company_id=company_id, user_id=user_id)
+        uc.delete()
+        return Response({"detail": "Сотрудник удалён"}, status=status.HTTP_204_NO_CONTENT)
+    except user_company.DoesNotExist:
+        return Response({"detail": "Сотрудник не найден"}, status=status.HTTP_404_NOT_FOUND)
