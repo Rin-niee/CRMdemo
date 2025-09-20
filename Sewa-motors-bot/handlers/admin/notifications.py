@@ -25,6 +25,7 @@ from keyboards.inline import (
     get_orders_with_opened_keyboard,
     get_admin_order_keyboard,
 )
+from crm_integration import push_notification_to_redis
 
 import asyncio
 
@@ -205,20 +206,19 @@ async def reminder_job(bot):
             if company_id:
                 company = await get_company_by_id(company_id)
                 if company:
-                    parts = [f"\n<b>🏢 Компания:</b>"]
-                    if company.get("name"):
-                        parts.append(f"Наименование: {company['name']}")
-                    if company.get("INN"):
-                        parts.append(f"ИНН: {company['INN']}")
-                    if company.get("OGRN"):
-                        parts.append(f"ОГРН: {company['OGRN']}")
-                    if company.get("address"):
-                        parts.append(f"Адрес:{company['address']}")
-                    if company.get("phone"):
-                        parts.append(f"Телефон:{company['phone']}")
-                    if company.get("email"):
-                        parts.append(f"E-mail: {company['email']}")
-                    company_text = "\n".join(parts)
+                    company_text = []
+                    company_text.append(
+                        "\n🏢<b> Компания: </b>\n" +
+                        "Наименование: " + (company.get("name") or "Неизвестно") +
+                        "\nИНН: " + (company.get("INN") or "Неизвестно") +
+                        "\nАдрес: " + (company.get("OGRN") or "Неизвестно") +
+                        "\nТелефон: " + (company.get("phone") or "Неизвестно") +
+                        "\nE-mail: " + (company.get("email") or "Неизвестно")
+                    )
+                else:
+                    company_text = ""
+            else:
+                company_text = ""
             order_brand = order.get('brand','')
             order_model = order.get('model','')
             order_year = order.get('year','')
@@ -238,7 +238,6 @@ async def reminder_job(bot):
                     text1 += "\n" + "  ".join(details_list)
                 if order.get("opened_at"):
                     date = order.get('opened_at')
-                    # date_data = datetime.fromisoformat(date) 
                     formatted = date.strftime("%d.%m.%Y %H:%M:%S")
                     date_create = f"<b>📅 Создан:</b> {formatted}\n"
             text = (
@@ -260,7 +259,6 @@ async def reminder_job(bot):
             )
             for uid in targets:
                 try:
-                    #это код для добавления карточки дилера в заявку. Он еще в разработке и отключен временно.
                     if photo:
                         await bot.send_photo(
                         chat_id=uid,
@@ -291,10 +289,8 @@ async def reminder_job(bot):
 
 async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_time: datetime):
     try:
-        logger.info(f" ВРЕМЯ ПРИБЫТИЯ ЧУВАКА{arrival_time}")
         if isinstance(arrival_time, datetime):
             arrival_time = arrival_time + timedelta(hours=3)
-            # arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
             text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_time} (МСК)</b>."
         else: 
             if manager_id != 'NULL':
@@ -313,7 +309,13 @@ async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_
             except Exception as e:
                 logger.error(f"reminder: failed to send manager info to {uid}: {e}")
                 continue
-
+        event = {
+            "type": "bids",
+            "title": "🚗 <b>Осмотрщик отправился за заказом</b>\n\n",
+            "text": text_manager,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        await push_notification_to_redis(event)
     except Exception as e:
         logger.error(f"notify_manager_departure error: {e}")
 
@@ -322,6 +324,13 @@ async def notify_manager_arrived(bot, order_id: int, manager_id: int):
     try:
         text_manager = f"📷 Осмотрщик <b>{manager_id}</b>, прикрепленный к заказу <b>{order_id}</b> прибыл на место и начал съемку авто."
 
+        event = {
+            "type": "bids",
+            "title": "🚗 <b>Осмотрщик прибыл на место съемки</b>\n\n",
+            "text": text_manager,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        await push_notification_to_redis(event)
         allowed_groups = set(
             uid
             for uid in (await config.get_allowed_groups() or [])
@@ -391,10 +400,16 @@ async def notify_admin_manager_decline(bot, order, manager_id: int, reason: str)
             f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n"
             f"🆔 Заказ: {order.get('id')}\n"
             f"👤 Осмотрщик: {manager_id}\n"
-            f"📝 Причина: {reason or 'не указана'}"
         ),
         parse_mode="HTML",
     )
+    event = {
+        "type": "bids",
+        "title": "⚠️ <b>Осмотрщик отказался от заказа</b>\n\n",
+        "text": f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n🆔 Заказ: {order.get('id')}\n👤 Осмотрщик: {manager_id}\n",
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    await push_notification_to_redis(event)
 
 
 async def send_files_to_admin(
@@ -433,6 +448,21 @@ async def send_files_to_admin(
             f"\n👤 Фотограф ID: {photographer_user_id}\n"
             f"📁 Всего файлов: {len(files)}"
         )
+
+        note_text = (
+            f"<b>{order.get('brand', '')} {order.get('model', '')}</b>\n"
+            f"👤 Фотограф ID: {photographer_user_id}\n"
+            f"📁 Всего файлов: {len(files)}"
+        )
+
+        event = {
+            "type": "bids",
+            "title": prefix,
+            "text": note_text,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        await push_notification_to_redis(event)
+
         await bot.send_message(admin_id, header_text, parse_mode="HTML")
 
         photos = [f for f in files if f.get("type") == "photo"]
