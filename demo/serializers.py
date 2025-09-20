@@ -155,5 +155,9 @@ class GroupedChatMessageSerializer(serializers.Serializer):
                 "created_at": m.created_at.isoformat(),
                 "media": media_serialized
             })
+<<<<<<< Updated upstream
+        return grouped
+>>>>>>> Stashed changes
+=======
         return grouped
 >>>>>>> Stashed changes

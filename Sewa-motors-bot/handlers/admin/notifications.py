@@ -238,7 +238,10 @@ async def reminder_job(bot):
                     text1 += "\n" + "  ".join(details_list)
                 if order.get("opened_at"):
                     date = order.get('opened_at')
+<<<<<<< Updated upstream
                     # date_data = datetime.fromisoformat(date) 
+=======
+>>>>>>> Stashed changes
                     formatted = date.strftime("%d.%m.%Y %H:%M:%S")
                     date_create = f"<b>📅 Создан:</b> {formatted}\n"
             text = (

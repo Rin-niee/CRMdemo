@@ -87,9 +87,12 @@ DATABASES = {
     }
 }
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 
 =======
+=======
+>>>>>>> Stashed changes
 AUTH_USER_MODEL = "demo.User" 
 >>>>>>> Stashed changes
 # Password validation

@@ -184,6 +184,9 @@ class ChatMediaAdmin(admin.ModelAdmin):
     pass
 
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 admin.site.site_header = "CRM Demo - Администрирование"
 admin.site.site_title = "CRM Demo"

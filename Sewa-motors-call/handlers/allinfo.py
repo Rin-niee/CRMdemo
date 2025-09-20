@@ -27,8 +27,11 @@ async def show_order_info(callback: CallbackQuery, order: dict, state=None):
                 "\nE-mail: " + (order_company.get("email") or "Неизвестно")
             )
             order_text += info_parts
+<<<<<<< Updated upstream
 
         # Кнопки
+=======
+>>>>>>> Stashed changes
         buttons = [
             [InlineKeyboardButton(text="✅ Начать", callback_data=f"start_{order['id']}")],
             [InlineKeyboardButton(text="⬅️ Назад", callback_data="my_requests")]
@@ -39,6 +42,9 @@ async def show_order_info(callback: CallbackQuery, order: dict, state=None):
         
         await callback.answer()
     except Exception as e:
+<<<<<<< Updated upstream
         # логируем или показываем ошибку пользователю
+=======
+>>>>>>> Stashed changes
         await callback.message.answer(f"Произошла ошибка: {str(e)}")
         await callback.answer()

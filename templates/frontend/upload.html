@@ -196,7 +196,6 @@
     </div>
 
 <script>
-// Обработчик для кнопки возвращения к заказу
 document.getElementById('backToOrder').addEventListener('click', function(e) {
     e.preventDefault();
     const parts = window.location.pathname.split('/').filter(Boolean);
@@ -207,8 +206,6 @@ document.getElementById('backToOrder').addEventListener('click', function(e) {
         window.location.href = '/';
     }
 });
-
-// Функция для создания динамических полей формы
 function createDynamicFields(docType) {
     const container = document.getElementById('dynamicFields');
     container.innerHTML = '';
@@ -319,8 +316,7 @@ document.getElementById('orderForm').addEventListener('submit', async (e) => {
         if (file1) allFiles.push(file1);
         if (file2) allFiles.push(file2);
         if (file3) allFiles.push(file3);
-        
-        // Создание текстового файла
+    
         if (textField) {
             const textBlob = new Blob([textField], { type: 'text/plain' });
             allFiles.push(new File([textBlob], 'additional_info.txt', { type: 'text/plain' }));
@@ -334,7 +330,6 @@ document.getElementById('orderForm').addEventListener('submit', async (e) => {
         if (video) allFiles.push(video);
         
     } else if (doc_type === 'order_received') {
-        // Для чекбоксов текстовый файл с информацией о пунктах
         const checkboxes = {};
         const selectedItems = [];
         
@@ -382,8 +377,6 @@ document.getElementById('orderForm').addEventListener('submit', async (e) => {
         method: 'POST',
         body: formData
     });
-
-    // Отладочная информация
     console.log('Отправляемые данные:');
     for (let [key, value] of formData.entries()) {
         console.log(key, value);

@@ -285,14 +285,12 @@ async function logoutUser() {
     });
 
     if (response.ok) {
-        // Перезагружаем страницу или обновляем блок
         window.location.reload();
     } else {
         alert("Ошибка при выходе");
     }
 }
 
-// Навешиваем обработчик только если кнопка есть
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", logoutUser);
@@ -332,8 +330,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         let companies = await response.json();
         companies = Array.isArray(companies) ? companies : [companies];
-
-        // Оставляем только одобренные компании
         companies = companies.filter(c => c.is_approved);
 
         if (!companies.length) {

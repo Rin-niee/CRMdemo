@@ -286,14 +286,12 @@ async function logoutUser() {
     });
 
     if (response.ok) {
-        // Перезагружаем страницу или обновляем блок
         window.location.reload();
     } else {
         alert("Ошибка при выходе");
     }
 }
 
-// Навешиваем обработчик только если кнопка есть
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", logoutUser);
@@ -362,16 +360,12 @@ if (logoutBtn) {
     function createOrderCard(order) {
         const card = document.createElement('div');
         card.className = 'order-card';
-
-        // Форматирование даты
         const orderDate = new Date(order.date);
         const formattedDate = orderDate.toLocaleDateString('ru-RU', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         });
-
-        // Получение статуса заказа
         const statusText = getStatusText(order.status?.current_status || 'payment');
 
         card.innerHTML = `

@@ -1,6 +1,9 @@
 FROM python:3.12-slim
+<<<<<<< Updated upstream
 
 # Устанавливаем зависимости для PostgreSQL + netcat
+=======
+>>>>>>> Stashed changes
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
@@ -14,10 +17,15 @@ WORKDIR /usr/src/app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+<<<<<<< Updated upstream
 # Устанавливаем переменные окружения Django
 ENV DJANGO_SETTINGS_MODULE=CRMdemo.settings
 
 # Копируем весь проект
+=======
+ENV DJANGO_SETTINGS_MODULE=CRMdemo.settings
+
+>>>>>>> Stashed changes
 COPY . .
 
 <<<<<<< Updated upstream

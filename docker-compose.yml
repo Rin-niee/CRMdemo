@@ -27,6 +27,9 @@ services:
             python manage.py makemigrations &&
             python manage.py migrate --noinput &&
             python manage.py runserver 0.0.0.0:8000"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     networks:
       - crm_network
@@ -56,9 +59,12 @@ services:
       - crm_network
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   telegram_bot:
     build: .
 =======
+=======
+>>>>>>> Stashed changes
   redis:
     image: redis:7
     ports:
@@ -98,6 +104,23 @@ services:
       - storage:/usr/src/app/storage
     networks:
       - crm_network
+<<<<<<< Updated upstream
+=======
+      
+
+  bot2:
+    build: ./Sewa-motors-call
+    container_name: crm_bot_call
+    command: python main.py
+    working_dir: /usr/src/app
+    restart: always
+    env_file: ./Sewa-motors-call/.env
+    volumes:
+      - ./Sewa-motors-call:/usr/src/app
+      - storage:/usr/src/app/storage
+    networks:
+      - crm_network
+>>>>>>> Stashed changes
 
   db:
     image: postgres:15
@@ -116,6 +139,9 @@ volumes:
   static_volume: {}
   storage:
   pgdata:
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 networks:
   crm_network:

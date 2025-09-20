@@ -36,6 +36,9 @@ urlpatterns = [
     path('message/', views.get_all_message, name="get_all_message"),
     path('message/<int:pk>', views.get_message, name="get_message"),
     path("message/create/", views.create_message, name="create_message")
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 ]
 

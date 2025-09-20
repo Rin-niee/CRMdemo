@@ -1,8 +1,11 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Создание заказов</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         * {
             margin: 0;
@@ -163,9 +166,10 @@
         }
         
         .form-grid {
-            display: grid;
+            display: flex;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
+            flex-direction: column;
         }
         
         .form-group {
@@ -229,7 +233,7 @@
     <div class="container">
         <div class="card">
             <div class="form-section" >
-                <h2>📋 Форма создания заказа</h2>
+                <h2>📋 Форма создания компании</h2>
                 <div style="text-align: center; margin-bottom: 20px;">
                     <a href="/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; margin-right: 10px;">🏠 Вернуться на главную</a>
                 </div>
@@ -237,85 +241,68 @@
                     {% csrf_token %}
                     <div>
                         <div class="form-group">
-                            <label for="name">Имя клиента:</label>
-                            <input type="text" id="name" name="name" placeholder="Введите имя" required>
+                            <label for="name">Введите ИНН организации:</label>
+                            <input type="text" id="name" name="name" placeholder="Введите ИНН организации" required>
                         </div>
                         <div class="form-group">
-                            <label for="phone">Телефон:</label>
-                            <input type="tel" id="phone" name="phone" placeholder="Введите телефон" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="comment">Комментарий:</label>
-                            <textarea id="comment" name="comment" placeholder="Дополнительная информация"></textarea>
+                            <label for="INN">Введите пароль для присоединения к компании:</label>
+                            <input type="text" id="INN" name="INN" placeholder="Введите пароль для присоединения к компании" required>
                         </div>
                     </div>
-                    
                     <div>
-                        <div class="form-group">
-                            <label for="VIN">VIN автомобиля:</label>
-                            <input type="text" id="VIN" name="VIN" placeholder="Введите VIN" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="number_order">Номер заказа:</label>
-                            <input type="text" id="number_order" name="number_order" placeholder="Введите номер заказа" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="number_note">Номер заявки:</label>
-                            <input type="text" id="number_note" name="number_note" placeholder="Введите номер заявки" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="submit-btn">🎉 Создать заказ</button>
+                    <button type="submit" class="submit-btn">🎉 Присоединиться к компании</button></div>
                 </form>
-                <script>
-                    function getCookie(name) {
-                        let cookieValue = null;
-                        if (document.cookie && document.cookie !== '') {
-                            const cookies = document.cookie.split(';');
-                            for (let cookie of cookies) {
-                                cookie = cookie.trim();
-                                if (cookie.startsWith(name + '=')) {
-                                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                                    break;
-                                }
-                            }
-                        }
-                        return cookieValue;
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
                     }
-                    document.getElementById('orderForm').addEventListener("submit", async function(e) {
-                        e.preventDefault();
+                }
+            }
+            return cookieValue;
+        }
 
-                        const data = {
-                            VIN: document.getElementById("VIN").value,
-                            number_order: document.getElementById("number_order").value,
-                            number_note: document.getElementById("number_note").value,
-                            client: {
-                                name: document.getElementById("name").value,
-                                phone: document.getElementById("phone").value,
-                                comment: document.getElementById("comment").value
-                            }
-                        };
+        document.getElementById('orderForm').addEventListener("submit", async function(e) {
+            e.preventDefault();
 
-                        const csrfToken = getCookie('csrftoken');
+            const data = {
+                INN: document.getElementById("name").value,
+                password: document.getElementById("INN").value
+            };
 
-                        const response = await fetch("/api/order/", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRFToken": csrfToken
-                            },
-                            body: JSON.stringify(data)
-                        });
+            const csrfToken = getCookie('csrftoken');
 
-                        const result = await response.json();
+            try {
+                const response = await fetch("/api/company/add/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify(data)
+                });
 
-                        if (response.ok) {
-                            alert("Заказ создан!");
-                            window.location.href = "/";
-                        } else {
-                            alert("Ошибка: " + JSON.stringify(result));
-                        }
-                    });
-                </script>
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                    window.location.href = "/";
+                } else {
+                    alert("Ошибка: " + (result.error || "Неизвестная ошибка"));
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Ошибка соединения с сервером");
+            }
+        });
+        </script>
+
             </div>
         </div>
     </div>

@@ -142,6 +142,24 @@ class CarsPhoto(models.Model):
         verbose_name = "Фото"
         verbose_name_plural = "Фото"
 
+class ChatMessage(models.Model):
+    bid = models.ForeignKey(bid, on_delete=models.CASCADE)
+    chat_id = models.BigIntegerField()
+    message_thread_id = models.BigIntegerField()
+    message_id = models.BigIntegerField()
+    user_id = models.BigIntegerField()
+    username = models.CharField(max_length=255, blank=True)
+    topic_name = models.CharField(max_length=255, blank=True)
+    text = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    to_bot = models.BooleanField(default=False)
+
+#хранение файлов из сообщений
+class ChatMedia(models.Model):
+    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='media')
+    file_type = models.CharField(max_length=20)
+    file_url = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 # модель для сохранения смс.
 class ChatMessage(models.Model):

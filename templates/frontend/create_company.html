@@ -1,8 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Создание заказов</title>
+    <title>Создание компании</title>
+    
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         * {
             margin: 0;
@@ -163,9 +166,10 @@
         }
         
         .form-grid {
-            display: grid;
+            display: flex;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
+            flex-direction: column;
         }
         
         .form-group {
@@ -229,7 +233,7 @@
     <div class="container">
         <div class="card">
             <div class="form-section" >
-                <h2>📋 Форма создания заказа</h2>
+                <h2>📋 Форма создания компании</h2>
                 <div style="text-align: center; margin-bottom: 20px;">
                     <a href="/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; margin-right: 10px;">🏠 Вернуться на главную</a>
                 </div>
@@ -237,34 +241,24 @@
                     {% csrf_token %}
                     <div>
                         <div class="form-group">
-                            <label for="name">Имя клиента:</label>
-                            <input type="text" id="name" name="name" placeholder="Введите имя" required>
+                            <label for="name">Наименование компании:</label>
+                            <input type="text" id="name" name="name" placeholder="Введите наименование" required>
                         </div>
                         <div class="form-group">
-                            <label for="phone">Телефон:</label>
-                            <input type="tel" id="phone" name="phone" placeholder="Введите телефон" required>
+                            <label for="INN">ИНН:</label>
+                            <input type="text" id="INN" name="INN" placeholder="Введите ИНН" required>
                         </div>
                         <div class="form-group">
-                            <label for="comment">Комментарий:</label>
-                            <textarea id="comment" name="comment" placeholder="Дополнительная информация"></textarea>
+                            <label for="adress">Адрес организации:</label>
+                            <textarea id="adress" name="adress" placeholder="Адрес организации"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="website">Вебсайт:</label>
+                            <textarea id="website" name="website" placeholder="Веб-сайт"></textarea>
                         </div>
                     </div>
-                    
                     <div>
-                        <div class="form-group">
-                            <label for="VIN">VIN автомобиля:</label>
-                            <input type="text" id="VIN" name="VIN" placeholder="Введите VIN" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="number_order">Номер заказа:</label>
-                            <input type="text" id="number_order" name="number_order" placeholder="Введите номер заказа" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="number_note">Номер заявки:</label>
-                            <input type="text" id="number_note" name="number_note" placeholder="Введите номер заявки" required>
-                        </div>
-                    </div>
-                    <button type="submit" class="submit-btn">🎉 Создать заказ</button>
+                    <button type="submit" class="submit-btn">🎉 Создать заказ</button></div>
                 </form>
                 <script>
                     function getCookie(name) {
@@ -285,19 +279,15 @@
                         e.preventDefault();
 
                         const data = {
-                            VIN: document.getElementById("VIN").value,
-                            number_order: document.getElementById("number_order").value,
-                            number_note: document.getElementById("number_note").value,
-                            client: {
-                                name: document.getElementById("name").value,
-                                phone: document.getElementById("phone").value,
-                                comment: document.getElementById("comment").value
-                            }
+                            name: document.getElementById("name").value,
+                            INN: document.getElementById("INN").value,
+                            adress: document.getElementById("adress").value,
+                            website: document.getElementById("website").value,
                         };
 
                         const csrfToken = getCookie('csrftoken');
 
-                        const response = await fetch("/api/order/", {
+                        const response = await fetch("/api/company/", {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
@@ -309,7 +299,7 @@
                         const result = await response.json();
 
                         if (response.ok) {
-                            alert("Заказ создан!");
+                            alert("Компания создана!");
                             window.location.href = "/";
                         } else {
                             alert("Ошибка: " + JSON.stringify(result));

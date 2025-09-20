@@ -1,10 +1,13 @@
 from django.shortcuts import render, get_object_or_404
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 # Create your views here.
 def create_orders(request):
     return render(request, "frontend/create_orders.html")
 =======
+=======
+>>>>>>> Stashed changes
 #создание заказа
 def create_orders(request):
     return render(request, "frontend/create_orders.html")
@@ -20,6 +23,9 @@ def statuses(request, pk):
 # документы к заказу
 def upload_doc_status(request, pk):
     return render(request, "frontend/upload.html")
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 def all_orders(request):
@@ -62,5 +68,9 @@ def notifications(request):
 # страница чатов
 @login_required(login_url='/login/')
 def chats(request):
+<<<<<<< Updated upstream
+    return render(request, "frontend/chats.html")
+>>>>>>> Stashed changes
+=======
     return render(request, "frontend/chats.html")
 >>>>>>> Stashed changes

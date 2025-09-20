@@ -8,17 +8,85 @@ from rest_framework import status
 from .workflow import WORKFLOW_STEPS
 import requests
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 from demo.models import TGUsers
 from io import BytesIO
 =======
+=======
+>>>>>>> Stashed changes
 from demo.models import *
 from django.contrib.auth import authenticate, login, logout
 from demo.tasks import *
 import json
 import redis
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
 
 BOT_TOKEN = "7685909490:AAHTEZWoC3YLfkJzXNOuRGcqUsxg7DyUEaI"
+=======
+
+BOT_TOKEN = "7685909490:AAHTEZWoC3YLfkJzXNOuRGcqUsxg7DyUEaI"
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def ClientRegister(request):
+    data = request.data
+    data["role"] = "client"
+    serializer = UserRegisterSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Пользователь создан"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def user_login(request):
+    serializer = UserLoginSerializer(data=request.data)
+    if serializer.is_valid():
+        username = serializer.validated_data['username']
+        password = serializer.validated_data['password']
+
+        user = authenticate(username=username, password=password)
+        if user:
+            login(request, user) 
+            return Response({
+                "message": "Успешный вход",
+                "user_id": user.id,
+                "role": user.role
+            }, status=status.HTTP_200_OK)
+        return Response({"error": "Неверный логин или пароль"}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    return Response({
+        "username": request.user.username,
+        "id": request.user.id,
+        "role": request.user.role
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def user_logout(request):
+    logout(request)
+    return Response({"message": "Вы вышли из аккаунта"}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def ManagerRegister(request):
+    if not request.user.is_staff:
+        return Response({"error": "Ты не админ"}, status=status.HTTP_403_FORBIDDEN)
+
+    data = request.data
+    data["role"] = "manager"
+    serializer = UserRegisterSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Менеджер создан"}, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+>>>>>>> Stashed changes
 
 @api_view(['POST'])
 def create_order(request):
@@ -95,9 +163,15 @@ def upload_doc(request, pk):
     if idx + 1 < len(allowed_fields):
         next_label = status_labels.get(allowed_fields[idx + 1], "следующий статус")
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
     send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
     send_telegram_documents_group(uploaded_files, caption=f"Файлы по статусу: {label}")
+=======
+    
+    # send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
+    # send_telegram_documents_group(uploaded_files, caption=f"Файлы по статусу: {label}")
+>>>>>>> Stashed changes
 =======
     
     # send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
@@ -161,8 +235,11 @@ def send_telegram_documents_group(file_objs, caption=None):
             files=files_payload
 <<<<<<< Updated upstream
         )
+<<<<<<< Updated upstream
 =======
         )
+=======
+>>>>>>> Stashed changes
 import logging
 logger = logging.getLogger(__name__)
 
@@ -318,4 +395,7 @@ def create_message(request):
                 print("Ошибка отправки в Telegram:", e)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

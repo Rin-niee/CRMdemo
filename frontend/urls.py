@@ -12,13 +12,15 @@ urlpatterns = [
 =======
     path('registration/', views.ClientRegister, name="registration"),
     path('login/', views.login, name="login"),
+<<<<<<< Updated upstream
 
     # path('', views.bids, name="bids"),
+=======
+    
+>>>>>>> Stashed changes
     path('bid/all/', views.bids, name="bids"),
     path('bid/<int:pk>/', views.bid, name="bid"),
     path('bid/', views.create_bid, name="create_bid"),
-
-    # это url для заказов. они закрыты временно
     
     path('', views.all_orders, name="all_orders"),
     path('order/', views.create_orders, name="create_orders"),
@@ -34,6 +36,9 @@ urlpatterns = [
     
     path('notifications/', views.notifications, name="notifications"),
     path('chats/', views.chats, name="chats"),
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 ]
 

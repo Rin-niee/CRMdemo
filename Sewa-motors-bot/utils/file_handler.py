@@ -131,7 +131,11 @@ def get_user_files(user_id: int, order_id=None):
         return []
 
 async def get_files_from_db(bid_id: int):
+<<<<<<< Updated upstream
     photos = await get_photo_by_bid_id(bid_id)  # твоя текущая функция
+=======
+    photos = await get_photo_by_bid_id(bid_id)
+>>>>>>> Stashed changes
     files = []
 
     for photo in photos:
