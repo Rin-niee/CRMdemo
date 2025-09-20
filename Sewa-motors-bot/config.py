@@ -1,8 +1,7 @@
 import os
-import sqlite3
 from dotenv import load_dotenv
 import asyncpg
-import asyncio
+import redis.asyncio as aioredis
 
 # Загружаем переменные окружения из файла .env
 load_dotenv(override=True)
@@ -14,6 +13,10 @@ DB_HOST = os.getenv("DB_HOST", "db")
 DB_PORT = os.getenv("DB_PORT", "5432")
 # Токен бота из переменных окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+CRM_TOKEN = os.getenv("CRM_TOKEN")
+
+redis_client = aioredis.from_url("redis://redis:6379", decode_responses=True)
 
 # Настройки для работы с файлами
 MAX_FILE_SIZE = 40 * 1024 * 1024  # Максимальный размер файла: 40 МБ
