@@ -593,11 +593,13 @@ function createChatItem(chat) {
     if (chat.text && chat.text.trim() !== "") {
         lastMessageContent = chat.text;
     } else if (chat.media && chat.media.length > 0) {
-        lastMessageContent = chat.media.map(m => {
+                lastMessageContent = chat.media.map(m => {
             if (m.file_type === "photo") {
-                return `<img src="${m.file_url}" class="chat-media-preview" />`;
+                text = "Фото"
+                return `<p>${text}</p>`;
             } else if (m.file_type === "video") {
-                return `<video src="${m.file_url}" class="chat-media-preview" controls></video>`;
+                text = "Видео"
+                return `<p>${text}</p>`;
             }
             return "";
         }).join(" ");

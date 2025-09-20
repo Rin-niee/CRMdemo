@@ -9,7 +9,7 @@ import aiohttp
 logger = logging.getLogger(__name__)
 
 CRM_URL = "http://web:8000/api/bid/"
-CRM_TOKEN = "e77f8c8b6e87d77d9aa9e25e386560c47a131354"
+from config import CRM_TOKEN
 def create_bid_in_crm(url_users: str, other_fields: dict = None):
     payload = {
         "url_users": url_users,

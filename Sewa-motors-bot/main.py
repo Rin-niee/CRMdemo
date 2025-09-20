@@ -15,12 +15,11 @@ import re
 from config import BOT_TOKEN
 from handlers import files
 from crm_integration import create_bid_in_crm, wait_for_bid_details, update_bid_topics
-from config import BOT_TOKEN
 from utils.data import get_bid_by_thread_id,get_bid_info
 import requests
 CRM_URL = "http://web:8000/api/message/create/"
 from config import CRM_TOKEN
-
+from aiogram import F
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,7 +68,7 @@ async def test_all_messages(message: types.Message):
 
 
 # Обработчик для сообщений и сохранение их в бд для дальнейшей отправки в CRM
-@orders_router.message(lambda message: getattr(message, 'message_thread_id', None) is not None)
+@orders_router.message(F.message_thread_id & ~F.entities.func(lambda e: any(x.type == "bot_command" for x in e)))
 async def log_message(message: types.Message):
     bid_row = await get_bid_by_thread_id(message.message_thread_id)
     if not bid_row:
