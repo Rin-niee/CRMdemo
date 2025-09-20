@@ -84,8 +84,11 @@ class TGUsersAdmin(admin.ModelAdmin):
     ordering = ('chat_id',)
     list_per_page = 20
 
+<<<<<<< Updated upstream
 
 # Настройка заголовка админки
+=======
+>>>>>>> Stashed changes
 admin.site.site_header = "CRM Demo - Администрирование"
 admin.site.site_title = "CRM Demo"
 admin.site.index_title = "Панель управления"

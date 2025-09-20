@@ -1,0 +1,247 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Информация о заказе</title>
+    
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #f5f5f5;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .card {
+            background: #fff;
+            border: 2px solid #8B0000;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(139, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #8B0000;
+        }
+        
+        .card-header h1 {
+            color: #8B0000;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .order-number {
+            background: #8B0000;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section h2 {
+            color: #8B0000;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #8B0000;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #8B0000;
+            min-width: 140px;
+        }
+        
+        .info-value {
+            color: #333;
+            text-align: right;
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #8B0000;
+            color: #fff;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid #8B0000;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: #fff;
+            color: #8B0000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: #8B0000;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #fff;
+            color: #8B0000;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Информация о компании</h1>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="/company/all/" class="btn" style="background: #fff; color: #8B0000; border: 2px solid #8B0000; margin-right: 10px;">🏠 Вернуться к компаниям</a>
+            </div>
+            
+            <div class="section">
+                <h2>📋 Детали компании</h2>
+                <div class="info-row">
+                    <span class="info-label">Наименование компании:</span>
+                    <span class="info-value" id="name"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ИНН:</span>
+                    <span class="info-value" id="INN"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Юридический адрес компании:</span>
+                    <span class="info-value" id="adress"></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Сайт:</span>
+                    <span class="info-value" id="website"></span>
+                </div>
+
+                <div class="section">
+                    <h2>👥 Сотрудники</h2>
+                    <div id="employees-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const csrftoken = getCookie('csrftoken');
+    const pk = window.location.pathname.split('/').filter(Boolean).pop();
+
+    const response = await fetch(`/api/company/${pk}/`);
+    const order = await response.json();
+    document.getElementById("name").textContent = order.name;
+    document.getElementById("INN").textContent = order.INN;
+    document.getElementById("adress").textContent = order.adress;
+    document.getElementById("website").textContent = order.website;
+
+    const employeesContainer = document.getElementById("employees-container");
+    employeesContainer.innerHTML = '';
+
+    order.employees.forEach(emp => {
+        const row = document.createElement("div");
+        row.className = "info-row";
+
+        const label = document.createElement("span");
+        label.className = "info-label";
+        label.textContent = "Имя сотрудника:";
+
+        const value = document.createElement("span");
+        value.className = "info-value";
+        value.textContent = `${emp.name} (${emp.role})`;
+
+        row.appendChild(label);
+        row.appendChild(value);
+        if(order.current_user_role === 'owner' && emp.id !== order.current_user_id) {
+            const removeBtn = document.createElement("button");
+            removeBtn.textContent = '❌';
+            removeBtn.style.marginLeft = '10px';
+            removeBtn.onclick = async () => {
+                await fetch(`/api/company/${pk}/employee/${emp.id}/remove/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                row.remove();
+            };
+            value.appendChild(removeBtn);
+        }
+
+        employeesContainer.appendChild(row);
+    });
+});
+</script>
+
+</body>
+
+</html> 

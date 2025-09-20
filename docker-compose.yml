@@ -6,10 +6,28 @@ services:
     container_name: crm_django
     restart: always
     volumes:
+<<<<<<< Updated upstream
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
       - ./staticfiles:/usr/src/app/staticfiles
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+=======
+      - .:/usr/src/app
+      - static_volume:/usr/src/app/staticfiles
+      - storage:/usr/src/app/storage
+    environment:
+      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    command: >
+      sh -c "until pg_isready -h db -p 5432 -U crm_user;
+            do echo '⏳ Ждём Postgres...'; sleep 1; done &&
+            python manage.py makemigrations &&
+            python manage.py migrate --noinput &&
+            python manage.py runserver 0.0.0.0:8000"
+>>>>>>> Stashed changes
     networks:
       - crm_network
 
@@ -26,19 +44,79 @@ services:
       - web
     networks:
       - crm_network
+  celery:
+    build: .
+    command: sh -c "until nc -z redis 6379; do echo '⏳ Ждём Redis...'; sleep 1; done && celery -A CRMdemo worker --loglevel=info"
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - redis
+      - db
+    networks:
+      - crm_network
 
+<<<<<<< Updated upstream
   telegram_bot:
     build: .
+=======
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - crm_network
+  bot:
+    build: ./Sewa-motors-bot
+>>>>>>> Stashed changes
     container_name: crm_bot
     restart: always
     command: python manage.py python-telegram-bot
     environment:
       - DJANGO_SETTINGS_MODULE=CRMdemo.settings
     volumes:
+<<<<<<< Updated upstream
       - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
     networks:
       - crm_network
 
+=======
+      - ./Sewa-motors-bot:/usr/src/app
+      - storage:/usr/src/app/storage
+    networks:
+      - crm_network
+      
+
+  bot2:
+    build: ./Sewa-motors-call
+    container_name: crm_bot_call
+    command: python main.py
+    working_dir: /usr/src/app
+    restart: always
+    env_file: ./Sewa-motors-call/.env
+    volumes:
+      - ./Sewa-motors-call:/usr/src/app
+      - storage:/usr/src/app/storage
+    networks:
+      - crm_network
+
+  db:
+    image: postgres:15
+    container_name: crm_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - crm_network
+
+volumes:
+  static_volume: {}
+  storage:
+  pgdata:
+>>>>>>> Stashed changes
 networks:
   crm_network:
     driver: bridge
