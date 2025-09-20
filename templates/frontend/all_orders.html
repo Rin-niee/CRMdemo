@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>Все заказы</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <style>
         /* Единый светлый фон и базовая типографика */
         body {
@@ -239,10 +241,6 @@
     </style>
 </head>
 <body>
-<<<<<<< Updated upstream
-    <div class="page-header">
-        <h1 class="page-title">Все заказы</h1>
-=======
 <div style="text-align: right;margin: 20px;font-weight: bold;color: #8B0000;display: flex;justify-content: space-between;" id="current-user">
     
     <div style="font-size: 20px;" class ='headers' >{% if user.is_authenticated %}
@@ -304,8 +302,9 @@ if (logoutBtn) {
     <div style="display: flex; justify-content: flex-start; gap: 10px; margin-top: 18px;">
         <a href="/registration/" class="action-btn secondary-btn" style="min-width:120px;">📝 Регистрация</a>
         <a href="/login/" class="action-btn secondary-btn" style="min-width:120px;">🔑 Вход</a>
->>>>>>> Stashed changes
     </div>
+    {% endif %}
+</div>
 
     <div class="create-order-section">
         <a href="/order/" class="create-btn">+ Создать новый заказ</a>

@@ -15,5 +15,6 @@ ENV DJANGO_SETTINGS_MODULE=CRMdemo.settings
 
 COPY . .
 
-CMD sh -c "python manage.py collectstatic --noinput --clear && gunicorn --bind 0.0.0.0:8000 CRMdemo.wsgi:application"
+RUN python manage.py collectstatic --noinput
 
+CMD ["gunicorn", "CRMdemo.wsgi:application", "--bind", "0.0.0.0:8000"]

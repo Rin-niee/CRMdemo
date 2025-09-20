@@ -1,9 +1,60 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+
+class Companies(models.Model):
+    name = models.CharField(max_length=100,verbose_name="Наименование компании")
+    code = models.CharField(max_length=100, blank=True, null=True,verbose_name="Код присоединения к компании")
+    INN = models.CharField(max_length=100, blank=True, null=True,verbose_name="ИНН компании")
+    OGRN = models.CharField(max_length=100, blank=True, null=True,verbose_name="ОГРН компании")
+    adress = models.CharField(max_length=255, blank=True, null=True,verbose_name="Юридический адрес")
+    website = models.CharField(max_length=255, blank=True, null=True,verbose_name="Сайт компании")
+    email = models.EmailField(blank=True, null=True, verbose_name="E-mail")
+    is_approved = models.BooleanField(default=False, verbose_name="Одобрено")
+    class Meta:
+        db_table = "companies"
+        verbose_name = "Компания"
+        verbose_name_plural = "Компании"
+    def __str__(self):
+        return self.name
+    
+class User(AbstractUser):
+    email = models.EmailField(unique=True)
+    name =  models.CharField(max_length=255, blank=True, null=True, verbose_name="ФИО пользователя")
+    role = models.CharField(max_length=20, default="client", verbose_name="Роль пользователя")
+    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Номер телефона")
+    class Meta:
+        db_table = "user"
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+    def __str__(self):
+        return self.username
+    
+class user_company(models.Model):
+    STATUS_CHOICES = [
+        ('owner', 'Владелец'),
+        ('manager', 'Менеджер'),
+        ('leading_manager', 'Ведущий менеджер'),
+        ('logist', 'Логист'),
+    ]
+    company_id = models.ForeignKey(Companies, on_delete=models.CASCADE)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=100, choices=STATUS_CHOICES, default = "manager")
+    def __str__(self):
+        return f"Сompany #{self.company_id} - сотрудник {self.user_id}"
+    class Meta:
+        db_table = "user_company"
+        verbose_name = "Сотрудник компании"
+        verbose_name_plural = "Сотрудники компании"
 
 class Client(models.Model):
     name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15)
     comment = models.TextField(blank=True)
+    class Meta:
+        db_table = "clients"
+        verbose_name = "Клиент"
+        verbose_name_plural = "Клиенты"
 
 class StatusFile(models.Model):
     DOC_TYPE_CHOICES = [
@@ -19,7 +70,10 @@ class StatusFile(models.Model):
     file = models.FileField(upload_to='docs/%Y/%m/%d/')
     doc_type = models.CharField(max_length=50, choices=DOC_TYPE_CHOICES)
     uploaded_at = models.DateTimeField(auto_now_add=True)
-
+    class Meta:
+        db_table = "status_orders_files"
+        verbose_name = "Файл к статусам"
+        verbose_name_plural = "Файлы к статусам"
 
 class Status_orders(models.Model):
     STATUS_CHOICES = [
@@ -37,7 +91,10 @@ class Status_orders(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.current_status}"
-
+    class Meta:
+        db_table = "statuses"
+        verbose_name = "Статус"
+        verbose_name_plural = "Статусы"
 
 class Order(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
@@ -46,12 +103,11 @@ class Order(models.Model):
     number_note = models.CharField(max_length=100)
     date = models.DateField(auto_now_add=True)
     status = models.ForeignKey(Status_orders, on_delete=models.CASCADE)
+    class Meta:
+        db_table = "orders"
+        verbose_name = "Заказ"
+        verbose_name_plural = "Заказы"
 
-<<<<<<< Updated upstream
-
-class TGUsers(models.Model):
-    chat_id = models.IntegerField()
-=======
 class Groups(models.Model):
     tg_id=models.BigIntegerField()
     inspection_id = models.IntegerField()
@@ -161,4 +217,3 @@ class ChatMedia(models.Model):
     file_url = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
->>>>>>> Stashed changes

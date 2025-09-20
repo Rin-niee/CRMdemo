@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Client, StatusFile, Status_orders, Order, TGUsers
+from django.core.exceptions import ValidationError
+from .models import *
+from django.utils.html import format_html
+from django.utils import timezone
 
 
 @admin.register(Client)
@@ -79,15 +82,11 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(TGUsers)
 class TGUsersAdmin(admin.ModelAdmin):
-    list_display = ('chat_id', 'id')
-    search_fields = ('chat_id',)
-    ordering = ('chat_id',)
+    list_display = ('is_admin', 'id')
+    search_fields = ('is_admin',)
+    ordering = ('is_admin',)
     list_per_page = 20
 
-<<<<<<< Updated upstream
-
-# Настройка заголовка админки
-=======
 @admin.register(Companies)
 class CompaniesAdmin(admin.ModelAdmin):
     list_display = ('name', 'is_approved')
@@ -184,7 +183,6 @@ class ChatMediaAdmin(admin.ModelAdmin):
     pass
 
 
->>>>>>> Stashed changes
 admin.site.site_header = "CRM Demo - Администрирование"
 admin.site.site_title = "CRM Demo"
 admin.site.index_title = "Панель управления"

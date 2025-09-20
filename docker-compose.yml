@@ -1,17 +1,9 @@
-version: '3.8'
-
 services:
   web:
     build: .
     container_name: crm_django
     restart: always
     volumes:
-<<<<<<< Updated upstream
-      - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
-      - ./staticfiles:/usr/src/app/staticfiles
-    environment:
-      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
-=======
       - .:/usr/src/app
       - static_volume:/usr/src/app/staticfiles
       - storage:/usr/src/app/storage
@@ -27,7 +19,6 @@ services:
             python manage.py makemigrations &&
             python manage.py migrate --noinput &&
             python manage.py runserver 0.0.0.0:8000"
->>>>>>> Stashed changes
     networks:
       - crm_network
 
@@ -39,7 +30,8 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./staticfiles:/usr/src/app/staticfiles
+      - static_volume:/usr/src/app/staticfiles
+      - storage:/usr/src/app/storage
     depends_on:
       - web
     networks:
@@ -55,10 +47,6 @@ services:
     networks:
       - crm_network
 
-<<<<<<< Updated upstream
-  telegram_bot:
-    build: .
-=======
   redis:
     image: redis:7
     ports:
@@ -67,19 +55,12 @@ services:
       - crm_network
   bot:
     build: ./Sewa-motors-bot
->>>>>>> Stashed changes
     container_name: crm_bot
+    command: python main.py
+    working_dir: /usr/src/app
     restart: always
-    command: python manage.py python-telegram-bot
-    environment:
-      - DJANGO_SETTINGS_MODULE=CRMdemo.settings
+    env_file: ./Sewa-motors-bot/.env
     volumes:
-<<<<<<< Updated upstream
-      - ./db.sqlite3:/usr/src/app/db.sqlite3:rw
-    networks:
-      - crm_network
-
-=======
       - ./Sewa-motors-bot:/usr/src/app
       - storage:/usr/src/app/storage
     networks:
@@ -116,7 +97,6 @@ volumes:
   static_volume: {}
   storage:
   pgdata:
->>>>>>> Stashed changes
 networks:
   crm_network:
     driver: bridge

@@ -1,10 +1,7 @@
 from django.shortcuts import render, get_object_or_404
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
 
-<<<<<<< Updated upstream
-# Create your views here.
-def create_orders(request):
-    return render(request, "frontend/create_orders.html")
-=======
 #создание заказа
 def create_orders(request):
     return render(request, "frontend/create_orders.html")
@@ -20,21 +17,28 @@ def statuses(request, pk):
 # документы к заказу
 def upload_doc_status(request, pk):
     return render(request, "frontend/upload.html")
->>>>>>> Stashed changes
 
-def all_orders(request):
-    return render(request, "frontend/all_orders.html")
+# регистрация клиента
+def ClientRegister(request):
+    return render(request, "frontend/registration.html")
+# вход в клиента
+def login(request):
+    return render(request, "frontend/login.html")
 
-def order(request, pk):
-    return render(request, "frontend/order.html")
+#все заявки
+@login_required(login_url='/login/')
+def bids(request):
+    return render(request, "frontend/all_bids.html")
+#заявка конкретная
+@login_required(login_url='/login/')
+def bid(request, pk):
+    return render(request, "frontend/bid.html")
+# создание заявки
+@login_required(login_url='/login/')
+def create_bid(request):
+    return render(request, "frontend/create_bid.html")
 
-def statuses(request, pk):
-    return render(request, "frontend/status.html")
 
-<<<<<<< Updated upstream
-def upload_doc_status(request, pk):
-    return render(request, "frontend/upload.html")
-=======
 
 #все компании
 @login_required(login_url='/login/')
@@ -63,4 +67,3 @@ def notifications(request):
 @login_required(login_url='/login/')
 def chats(request):
     return render(request, "frontend/chats.html")
->>>>>>> Stashed changes
