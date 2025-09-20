@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from .models import *
+from collections import defaultdict
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,15 +32,15 @@ class OrdersSerializer(serializers.ModelSerializer):
         client_data = validated_data.pop('client')
         client = Client.objects.create(**client_data)
         status_obj = Status_orders.objects.create(current_status='payment')
-        order = order.objects.create(client=client, status=status_obj, **validated_data)
+        order = Order.objects.create(client=client, status=status_obj, **validated_data)
         return order
 
 
 class BidsSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), required=False
-    )
-    user_username = serializers.SerializerMethodField()
+    # user = serializers.PrimaryKeyRelatedField(
+    #     queryset=User.objects.all(), required=False
+    # )
+    # user_username = serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -53,16 +54,17 @@ class BidsSerializer(serializers.ModelSerializer):
     def get_company_name(self, obj):
         return obj.company.name if obj.company else None
     def create(self, validated_data):
-        user = validated_data.get('user') or self.context['request'].user
-        validated_data['user'] = user
-        user_comp = user_company.objects.filter(user_id=user).first()
-        if not user_comp or not user_comp.company_id:
-            raise serializers.ValidationError("Вы не состоите ни в одной компании, заявка не может быть создана.")
-        user_comp = user_company.objects.filter(user_id=user).first()
-        if user_comp and user_comp.company_id:
-            validated_data['company'] = user_comp.company_id
-        else:
-            validated_data['company'] = None
+        # user = validated_data.get('user') or self.context['request'].user
+        # validated_data['user'] = user
+        validated_data['status'] = 'ring'
+        # user_comp = user_company.objects.filter(user_id=user).first()
+        # if not user_comp or not user_comp.company_id:
+        #     raise serializers.ValidationError("Вы не состоите ни в одной компании, заявка не может быть создана.")
+        # user_comp = user_company.objects.filter(user_id=user).first()
+        # if user_comp and user_comp.company_id:
+        #     validated_data['company'] = user_comp.company_id
+        # else:
+        #     validated_data['company'] = None
         bid_obj = bid.objects.create(**validated_data)
         return bid_obj
 
@@ -119,4 +121,36 @@ class CompanySerializer(serializers.ModelSerializer):
         user_company.objects.create(user_id=user, company_id=company, role='owner')
         return company
     
+
+class ChatMediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMedia
+        fields = ['file_url', 'file_type']   
     
+class ChatMessageSerializer(serializers.ModelSerializer):
+    media = ChatMediaSerializer(many=True, read_only=True)
+    class Meta:
+        model = ChatMessage
+        fields = ['bid', 'chat_id', 'message_thread_id', 'message_id', 'user_id', 
+                  'username', 'topic_name', 'text', 'created_at', 'to_bot', 'media']
+        
+class GroupedChatMessageSerializer(serializers.Serializer):
+    grouped = serializers.SerializerMethodField()
+
+    def get_grouped(self, obj):
+        grouped = defaultdict(list)
+        for m in obj:
+            media_serialized = ChatMediaSerializer(m.media.all(), many=True).data
+            grouped[m.message_thread_id].append({
+                "bid_id": m.bid_id,
+                "chat_id": m.chat_id,
+                "message_thread_id": m.message_thread_id,
+                "message_id": m.message_id,
+                "user_id": m.user_id,
+                "username": m.username,
+                "text": m.text,
+                "topic_name": m.topic_name,
+                "created_at": m.created_at.isoformat(),
+                "media": media_serialized
+            })
+        return grouped

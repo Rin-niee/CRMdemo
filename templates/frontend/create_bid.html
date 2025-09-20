@@ -244,13 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append("engine", document.getElementById("engine").value);
         formData.append("power", document.getElementById("power").value);
         formData.append("transmission", document.getElementById("transmission").value);
-
-        // // добавляем все фото
-        // const photos = document.getElementById("photo").files;
-        // for (let i = 0; i < photos.length; i++) {
-        //     formData.append("photo", photos[i]);  
-        // }
-
         const csrfToken = getCookie('csrftoken');
 
         const response = await fetch("/api/bid/", {

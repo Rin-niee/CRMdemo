@@ -6,10 +6,13 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from demo.serializers import *
 import requests
-from demo.models import TGUsers
+from demo.models import *
 from django.contrib.auth import authenticate, login, logout
+from demo.tasks import *
+import json
+import redis
 
-BOT_TOKEN = "7519143065:AAGYsojc-fz9dxY4S1VFQE3UvOxICoNK7ns"
+BOT_TOKEN = "7685909490:AAHTEZWoC3YLfkJzXNOuRGcqUsxg7DyUEaI"
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -82,7 +85,7 @@ def create_order(request):
 
 @api_view(['GET'])
 def all_orders(request):
-    orders = order.objects.all()
+    orders = Order.objects.all()
     serializer = OrdersSerializer(orders, many=True)
     return Response(serializer.data)
 
@@ -146,8 +149,8 @@ def upload_doc(request, pk):
     if idx + 1 < len(allowed_fields):
         next_label = status_labels.get(allowed_fields[idx + 1], "следующий статус")
     
-    send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
-    send_telegram_documents_group(uploaded_files, caption=f"Файлы по статусу: {label}")
+    # send_telegram_message(f"🚗 Заказ #{pk} перешел из статуса <b>{label}</b> в статус <b>{next_label}</b>")
+    # send_telegram_documents_group(uploaded_files, caption=f"Файлы по статусу: {label}")
 
     serializer = Status_ordersSerializer(status_obj)
     return Response(serializer.data, status=200)
@@ -205,15 +208,21 @@ def send_telegram_documents_group(file_objs, caption=None):
             data=data,
             files=files_payload
         )
+import logging
+logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 def create_bid(request):
-    serializer = BidsSerializer(data = request.data, context={'request': request})
+    serializer = BidsSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status =status.HTTP_201_CREATED)
+        bid_instance = serializer.save()
+        url = request.data.get("url_users")
+        logger.info(f"ДФДДФФДФД, {bid_instance.id}, {url}")
+        if url:
+            fetch_car_data_task.delay(bid_instance.id, [url])
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -227,6 +236,17 @@ def bid_one(request, pk):
     bid_one = get_object_or_404(bid, pk=pk)
     serializer = BidsSerializer(bid_one)
     return Response(serializer.data)
+
+@api_view(["PATCH"])
+def update_bid_topics(request, pk):
+    instance = get_object_or_404(bid, pk=pk)
+    thread_id = request.data.get("thread_id")
+    if thread_id is None:
+        return Response({"detail": "thread_id required"}, status=400)
+
+    instance.thread_id = thread_id
+    instance.save(update_fields=["thread_id"])
+    return Response({"success": True, "thread_id": instance.thread_id})
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -282,3 +302,64 @@ def remove_employee(request, company_id, user_id):
         return Response({"detail": "Сотрудник удалён"}, status=status.HTTP_204_NO_CONTENT)
     except user_company.DoesNotExist:
         return Response({"detail": "Сотрудник не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+def notifications_api(request):
+    r = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
+    raw = r.lrange("notifications_queue", 0, -1)
+    notifications = [json.loads(item) for item in raw]
+    return Response(notifications)
+
+
+@api_view(['POST'])
+def toggle_read_api(request, pk):
+    r = redis.Redis(host="redis", port=6379, db=0, decode_responses=True)
+    raw = r.lrange("notifications_queue", 0, -1)
+
+    for i, item in enumerate(raw):
+        notif = json.loads(item)
+        if notif.get("id") == pk:
+            notif["read"] = not notif.get("read", False)
+            r.lset("notifications_queue", i, json.dumps(notif))
+            return Response({"success": True, "read": notif["read"]})
+
+    return Response({"success": False, "error": "not found"}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+def get_message(request, pk):
+    messages = ChatMessage.objects.filter(message_thread_id=pk).order_by("created_at")
+    serializer = ChatMessageSerializer(messages, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def get_all_message(request):
+    messages = ChatMessage.objects.all().order_by("created_at")
+    serializer = GroupedChatMessageSerializer(messages, many=False)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def create_message(request):
+    serializer = ChatMessageSerializer(data=request.data)
+    if serializer.is_valid():
+        message = serializer.save()
+        media_data = request.data.get('media', [])
+        for m in media_data:
+            ChatMedia.objects.create(
+                message=message,
+                file_url=m['file_url'],
+                file_type=m['type']
+            )
+        if message.to_bot:
+            url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+            payload = {
+                "chat_id": message.chat_id,
+                "message_thread_id": message.message_thread_id,
+                "text": message.text,
+            }
+            try:
+                resp = requests.post(url, json=payload)
+                resp.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                print("Ошибка отправки в Telegram:", e)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

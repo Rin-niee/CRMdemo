@@ -36,7 +36,7 @@ async def order_status_action(callback: CallbackQuery, state: FSMContext):
             return
         _, status, order_id = parts
 
-        order = get_order_by_id(order_id)
+        order = await get_order_by_id(order_id)
         if not order:
             await callback.answer("Заказ не найден.", show_alert=True)
             return
@@ -59,7 +59,7 @@ async def order_status_action(callback: CallbackQuery, state: FSMContext):
                 for f in current_files
                 if f.get("stage") == "📷 Дополнительные материалы"
             ]
-            checklist = get_checklist_answers(int(order_id))
+            checklist = await get_checklist_answers(int(order_id))
             checklist_done = (
                 checklist.get("checklist_point1") is not None
                 or checklist.get("checklist_point2") is not None

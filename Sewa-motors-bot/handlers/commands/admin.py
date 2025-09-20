@@ -15,7 +15,6 @@ from aiogram.types import CallbackQuery
 from utils.data import (
     get_companies_with_disabled_orders,
     get_disabled_orders_by_company,
-    update_order_status,
     mark_order_open,
     get_order_by_id,
 )
@@ -27,15 +26,15 @@ router = Router()
 async def become_admin_command(message: Message):
     user_id = message.from_user.id
 
-    if not config.is_authorized(user_id):
+    if not await config.is_authorized(user_id):
         await message.answer("❌ У вас нет доступа к этой команде.")
         return
 
-    if config.is_admin(user_id):
+    if await config.is_admin(user_id):
         await message.answer("✅ Вы уже являетесь администратором.")
         return
 
-    config.set_admin_id(user_id)
+    await config.set_admin_id(user_id)
 
     await message.answer(
         f"✅ Вы назначены администратором!\n"
@@ -49,11 +48,11 @@ async def become_admin_command(message: Message):
 async def become_manager_command(message: Message):
     user_id = message.from_user.id
 
-    if not config.is_admin(user_id):
+    if not await config.is_admin(user_id):
         await message.answer("❌ Вы не являетесь администратором.")
         return
 
-    config.remove_admin_id()
+    await config.remove_admin_id()
     await message.answer(
         f"✅ Вы сняты с роли администратора.\n"
         f"Теперь вы обычный менеджер.\n\n"
@@ -63,11 +62,11 @@ async def become_manager_command(message: Message):
 
 @router.message(Command("openorders"))
 async def open_orders_menu(message: Message):
-    if not config.is_admin(message.from_user.id):
+    if not await config.is_admin(message.from_user.id):
         await message.answer("❌ Недостаточно прав.")
         return
 
-    companies = get_companies_with_disabled_orders()
+    companies = await get_companies_with_disabled_orders()
 
     if not companies:
         await message.answer("Нет заказов в статусе disabled.")
@@ -81,12 +80,12 @@ async def open_orders_menu(message: Message):
 
 @router.callback_query(F.data.startswith("open_company_"))
 async def openorders_company(callback: CallbackQuery):
-    if not config.is_admin(callback.from_user.id):
+    if not await config.is_admin(callback.from_user.id):
         await callback.answer("Недостаточно прав.", show_alert=True)
         return
 
     company_id = int(callback.data[len("open_company_") :])
-    orders = get_disabled_orders_by_company(company_id)
+    orders = await get_disabled_orders_by_company(company_id)
 
     if not orders:
         await callback.message.edit_text("У этой компании нет закрытых заказов.")
@@ -102,14 +101,14 @@ async def openorders_company(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("open_order_"))
 async def openorders_open_order(callback: CallbackQuery):
-    if not config.is_admin(callback.from_user.id):
+    if not await config.is_admin(callback.from_user.id):
         await callback.answer("Недостаточно прав.", show_alert=True)
         return
 
     order_id = callback.data[len("open_order_") :]
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     company_id = order.get("company_id") if order else None
-    mark_order_open(order_id)
+    await mark_order_open(order_id)
 
     try:
         await notify_managers_order_opened(callback.bot, order)
@@ -119,14 +118,14 @@ async def openorders_open_order(callback: CallbackQuery):
     await callback.answer("Заказ открыт!", show_alert=True)
 
     if company_id is not None:
-        remaining = get_disabled_orders_by_company(int(company_id))
+        remaining = await get_disabled_orders_by_company(int(company_id))
         if remaining:
             await callback.message.edit_text(
                 f"Выберите заказы для открытия ({len(remaining)}):",
                 reply_markup=get_disabled_orders_keyboard(remaining),
             )
         else:
-            companies = get_companies_with_disabled_orders()
+            companies = await get_companies_with_disabled_orders()
             if companies:
                 await callback.message.edit_text(
                     "Выберите компанию с закрытыми заказами:",
@@ -143,11 +142,11 @@ async def openorders_open_order(callback: CallbackQuery):
 @router.callback_query(F.data == "openorders_back_companies")
 async def openorders_back_companies(callback: CallbackQuery):
 
-    if not config.is_admin(callback.from_user.id):
+    if not await config.is_admin(callback.from_user.id):
         await callback.answer("Недостаточно прав.", show_alert=True)
         return
 
-    companies = get_companies_with_disabled_orders()
+    companies = await get_companies_with_disabled_orders()
 
     if not companies:
         await callback.message.edit_text("Нет заказов в статусе disabled.")

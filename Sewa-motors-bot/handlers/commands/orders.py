@@ -22,12 +22,15 @@ async def my_orders_command(message: Message, state: FSMContext):
         "Выберите статус заказов:", reply_markup=get_order_status_keyboard()
     )
 
+@router.message(Command("chatid"))
+async def echo_chat_id(message: Message):
+    await message.answer(f"chat_id этого чата: {message.chat.id}")
 
 @router.message(Command("orderplan"))
 async def order_plan_command(message: Message, state: FSMContext):
     await state.clear()
-    orders = get_open_orders_with_opened_at() #-- это функция для вызова всех открытых заявок. Она здесь и должна быть для тестирования.
-    # orders = get_open_orders_with_opened_at_day()
+    orders = await get_open_orders_with_opened_at() #-- это функция для вызова всех открытых заявок. Она здесь и должна быть для тестирования.
+    # orders = await get_open_orders_with_opened_at_day()
     if not orders:
         await message.answer("Нет недавно открытых открытых заказов.")
         return

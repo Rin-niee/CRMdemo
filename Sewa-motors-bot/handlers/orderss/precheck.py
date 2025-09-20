@@ -3,18 +3,20 @@ from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 import asyncio
 import config
+from datetime import datetime
+from crm_integration import push_notification_to_redis
+
 from utils.data import (
     get_order_by_id, 
-    get_manager_group,
-    get_thread_information,
-    get_all_users,
+    update_order_status,
+    assign_manager_to_order,
     )
 from handlers.orderss.states import OrderStates
 from keyboards.inline import (
-    get_precheck_manager_keyboard,
     get_precheck_after_video_keyboard,
-    get_precheck_manager_reply_keyboard,
 )
+
+from config import CRM_TOKEN
 router = Router()
 
 _pending_customer_wait: dict[str, asyncio.Task] = {}
@@ -66,7 +68,7 @@ async def precheck_send_to_manager(message: Message, state: FSMContext):
 
     data = await state.get_data()
     order_id = str(data.get("selected_order"))
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
 
     if not order:
         await message.answer("Заказ не найден.")
@@ -78,7 +80,7 @@ async def precheck_send_to_manager(message: Message, state: FSMContext):
         await state.clear()
         return
 
-    admin_id = config.get_admin_id()
+    admin_id = await config.get_admin_id()
     if not admin_id:
         await message.answer("Администратор не назначен.")
         await state.clear()
@@ -89,6 +91,16 @@ async def precheck_send_to_manager(message: Message, state: FSMContext):
         f"🚗 {order.get('brand','')} {order.get('model','')}\n"
         f"🆔 Заказ: {order.get('id')}"
     )
+
+
+    text = f"🚗 {order.get('brand','')} {order.get('model','')}\n" + f"🆔 Заказ: {order.get('id')}"
+    event = {
+        "type": "bids",
+        "title": "🚗 <b>Запрос на консультацию</b>\n\n",
+        "text": text,
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    await push_notification_to_redis(event)
 
     try:
         kb = get_precheck_after_video_keyboard(order_id)
@@ -102,7 +114,7 @@ async def precheck_send_to_manager(message: Message, state: FSMContext):
 
     except Exception as e:
         print(f"[ERROR] Не удалось отправить видео для заказа {order_id} админу {admin_id}: {e}")
-        await message.answer("Произошла ошибка при отправке видео администратору.")
+        await message.answer(f"Произошла ошибка при отправке видео администратору.{e}")
 
     finally:
         await state.clear()
@@ -111,9 +123,9 @@ async def precheck_send_to_manager(message: Message, state: FSMContext):
 @router.callback_query(F.data.startswith("precheck_continue_"))
 async def precheck_continue(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data[len("precheck_continue_"):]
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     if order and order.get("manager_id"):
-        await _send_manager_start_button(callback.bot, order["manager_id"], str(order_id))
+        await _send_manager_start_button(callback.bot, order["manager_id"], int(order_id))
         _active_chats.pop(str(order_id), None)
         _chat_manager_to_order.pop(order["manager_id"], None)
         _require_video_for_order.pop(str(order_id), None)
@@ -128,9 +140,8 @@ async def start_session_now(callback: CallbackQuery, state: FSMContext):
 
     order_id = callback.data.split(":", 1)[1]
     try:
-        from utils.data import update_order_status, assign_manager_to_order
-        update_order_status(str(order_id), "progress")
-        assign_manager_to_order(str(order_id), callback.from_user.id)
+        await update_order_status(str(order_id), "progress")
+        await assign_manager_to_order(str(order_id), callback.from_user.id)
         _active_chats.pop(str(order_id), None)
         _chat_manager_to_order.pop(callback.from_user.id, None)
         _require_video_for_order.pop(str(order_id), None)
@@ -156,7 +167,7 @@ async def manager_reply_start(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith("precheck_chat_"))
 async def precheck_chat_start(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data[len("precheck_chat_"):]
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     if not order or not order.get("manager_id"):
         await callback.answer("Осмотрщик не назначен.", show_alert=True)
         return
@@ -175,7 +186,7 @@ async def precheck_chat_bridge(message: Message, state: FSMContext):
     order_id = data.get("chat_order_id")
     if not order_id:
         return
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     manager_id = order.get("manager_id") if order else None
     if not manager_id:
         await message.answer("Осмотрщик не назначен.")
@@ -207,7 +218,7 @@ async def precheck_chat_bridge(message: Message, state: FSMContext):
 
 @router.message(OrderStates.precheck_chat_manager, F.text & ~F.text.startswith('/'))
 async def precheck_chat_reply(message: Message, state: FSMContext):
-    admin_id = config.get_admin_id()
+    admin_id = await config.get_admin_id()
     if not admin_id:
         return
     if not message.text or not message.text.strip():
@@ -219,7 +230,7 @@ async def precheck_chat_reply(message: Message, state: FSMContext):
             await message.bot.send_message(admin_id, f"💬 Ответ от осмотрщика:\n{message.text}")
             return
 
-        order = get_order_by_id(int(order_id))
+        order = await get_order_by_id(int(order_id))
         if order and order.get('status') == 'disabled':
             _active_chats.pop(str(order_id), None)
             _chat_manager_to_order.pop(message.from_user.id, None)
@@ -239,9 +250,8 @@ async def precheck_chat_reply(message: Message, state: FSMContext):
 @router.callback_query(F.data.startswith("precheck_stop_"))
 async def precheck_stop(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data[len("precheck_stop_"):]
-    from utils.data import update_order_status
-    update_order_status(str(order_id), "disabled")
-    order = get_order_by_id(int(order_id))
+    await update_order_status(str(order_id), "disabled")
+    order = await get_order_by_id(int(order_id))
     if order and order.get("manager_id"):
         await callback.bot.send_message(order["manager_id"], "⛔️ Осмотр остановлен администратором. Заказ закрыт.")
         _active_chats.pop(str(order_id), None)
@@ -273,7 +283,7 @@ async def cust_no_answer(callback: CallbackQuery, state: FSMContext):
     task = _pending_customer_wait.pop(str(order_id), None)
     if task:
         task.cancel()
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     if order and order.get("manager_id"):
         await _send_manager_start_button(callback.bot, order["manager_id"], str(order.get("id")))
     await callback.answer("Заказчик не ответил. Продолжайте осмотр.", show_alert=True)
@@ -285,7 +295,7 @@ async def cust_stop(callback: CallbackQuery, state: FSMContext):
     task = _pending_customer_wait.pop(str(order_id), None)
     if task:
         task.cancel()
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
     if order and order.get("manager_id"):
         await callback.bot.send_message(order["manager_id"], "⛔️ Осмотр приостановлен по решению заказчика.")
     await callback.answer("Сообщение отправлено осмотрщику.", show_alert=True)
@@ -304,7 +314,7 @@ async def cust_continue(callback: CallbackQuery, state: FSMContext):
 async def cust_comment_input(message: Message, state: FSMContext):
     data = await state.get_data()
     order_id = data.get("precheck_order_id")
-    order = get_order_by_id(int(order_id)) if order_id else None
+    order = await get_order_by_id(int(order_id)) if order_id else None
     if order and order.get("manager_id"):
         await message.bot.send_message(order["manager_id"], f"✅ Решение заказчика: {message.text}\nПродолжайте осмотр.")
         await _send_manager_start_button(message.bot, order["manager_id"], str(order_id))

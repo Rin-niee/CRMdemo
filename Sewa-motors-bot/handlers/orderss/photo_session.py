@@ -15,7 +15,11 @@ from keyboards.inline import (
     get_checklist_question_keyboard,
 )
 
-from utils.data import update_order_status, assign_manager_to_order, get_order_by_id
+from utils.data import(
+    update_order_status, 
+    assign_manager_to_order, 
+    get_order_by_id
+    )
 from handlers.admin.notifications import notify_admin_manager_assignment
 from typing import List
 import asyncio
@@ -49,7 +53,7 @@ async def start_photo_session(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
 
     # Получаем данные заказа
-    order = get_order_by_id(int(selected_order))
+    order = await get_order_by_id(int(selected_order))
     # Проверяем, не завершен ли заказ
     if order and order.get("status") == "done":
         await callback.answer(
@@ -103,8 +107,8 @@ async def update_order_async(selected_order, user_id):
     """
     try:
         order_id_str = str(selected_order)
-        update_order_status(order_id_str, "progress")
-        assign_manager_to_order(order_id_str, user_id)
+        await update_order_status(order_id_str, "progress")
+        await assign_manager_to_order(order_id_str, user_id)
     except Exception:
         pass
 
@@ -220,6 +224,6 @@ async def finish_photo_session_async(callback: CallbackQuery, state: FSMContext)
 async def send_to_admin_async(selected_order, user_id, bot):
     try:
         await send_files_to_admin(selected_order, user_id, bot, is_rework=False)
-        update_order_status(str(selected_order), "review")
+        await update_order_status(str(selected_order), "review")
     except Exception:
         pass

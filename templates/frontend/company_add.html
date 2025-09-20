@@ -272,8 +272,8 @@
             e.preventDefault();
 
             const data = {
-                INN: document.getElementById("name").value,      // ИНН компании
-                password: document.getElementById("INN").value  // пароль для присоединения
+                INN: document.getElementById("name").value,
+                password: document.getElementById("INN").value
             };
 
             const csrfToken = getCookie('csrftoken');
@@ -291,8 +291,8 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    alert(result.message); // Выводим сообщение от API
-                    window.location.href = "/"; // Перенаправление на главную
+                    alert(result.message);
+                    window.location.href = "/";
                 } else {
                     alert("Ошибка: " + (result.error || "Неизвестная ошибка"));
                 }

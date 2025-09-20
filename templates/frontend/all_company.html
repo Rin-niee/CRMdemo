@@ -248,6 +248,8 @@
         <div class = 'header_two'>
             <!-- <a href="/bid/all" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a> -->
             <a href="/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">К заявкам</a>
+            <a href="/notifications/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">🔔 Уведомления</a>
+            <a href="/chats/" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">💬 Чаты</a>
         <button id="logout-btn" class="action-btn secondary-btn" style="min-width: 120px; margin-left: 10px;">Выйти</button>
     {% else %}
         Вы не авторизованы
@@ -283,14 +285,12 @@ async function logoutUser() {
     });
 
     if (response.ok) {
-        // Перезагружаем страницу или обновляем блок
         window.location.reload();
     } else {
         alert("Ошибка при выходе");
     }
 }
 
-// Навешиваем обработчик только если кнопка есть
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", logoutUser);
@@ -330,8 +330,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         let companies = await response.json();
         companies = Array.isArray(companies) ? companies : [companies];
-
-        // Оставляем только одобренные компании
         companies = companies.filter(c => c.is_approved);
 
         if (!companies.length) {

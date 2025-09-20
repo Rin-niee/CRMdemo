@@ -9,16 +9,16 @@ from handlers.admin.notifications import (
     notify_admin_manager_decline,
 )
 from utils.file_handler import (
+    get_files_from_db,
     get_user_files,
 )
 import logging
 from utils.data import (
     update_order_status, 
-    get_order_by_id,
-    clear_manager_for_order,
-    get_dealer_by_id,
     get_checklist_answers,
+    get_dealer_by_id,
     get_thread_information, 
+    get_order_by_id,
 )
 
 from handlers.common.constans import MAX_FILES_TO_SEND
@@ -26,8 +26,8 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-def is_admin(user_id: int) -> bool:
-    return config.is_admin(user_id)
+async def is_admin(user_id: int) -> bool:
+    return await config.is_admin(user_id)
 
 
 class AdminReworkStates(StatesGroup):
@@ -37,13 +37,13 @@ class AdminReworkStates(StatesGroup):
 
 @router.callback_query(F.data.startswith("admin_rework_with_task_"))
 async def admin_rework_with_task_start(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
+    if not await is_admin(callback.from_user.id):
         await callback.answer(
             "Только администратор может отправлять заказы на доработку!",
             show_alert=True,
         )
         return
-    order_id = callback.data[len("admin_rework_with_task_") :]
+    order_id = int(callback.data[len("admin_rework_with_task_") :])
     await state.update_data(rework_order_id=order_id)
     await state.set_state(AdminReworkStates.waiting_task_text)
     await callback.message.answer(
@@ -56,10 +56,10 @@ async def admin_rework_with_task_start(callback: CallbackQuery, state: FSMContex
 async def capture_admin_task_text(message, state: FSMContext):
     data = await state.get_data()
     order_id = data.get("rework_order_id")
-    if not is_admin(message.from_user.id):
+    if not await is_admin(message.from_user.id):
         return
     task_text = message.text or ""
-    order = get_order_by_id(order_id)
+    order = await get_checklist_answers(order_id)
     if not order:
         await message.answer("Заказ не найден!")
         await state.clear()
@@ -70,7 +70,7 @@ async def capture_admin_task_text(message, state: FSMContext):
         await state.clear()
         return
 
-    update_order_status(order_id, "progress")
+    await update_order_status(order_id, "progress")
     rework_kb = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -85,7 +85,7 @@ async def capture_admin_task_text(message, state: FSMContext):
     dealer_block = ""
     dealer_id = order.get("dealers_id")
     if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
+        dealer = await get_dealer_by_id(dealer_id)
         if dealer:
             parts = []
             if dealer.get("name"):
@@ -125,7 +125,7 @@ async def finish_additional_task(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
 
     await send_files_to_admin(order_id, user_id, callback.bot, is_rework=True)
-    update_order_status(order_id, "review")
+    await update_order_status(order_id, "review")
 
     await callback.answer(
         "Доп. задача завершена, материалы отправлены админу.", show_alert=True
@@ -135,17 +135,19 @@ async def finish_additional_task(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("admin_confirm_"))
 async def admin_confirm_order(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
+    if not await is_admin(callback.from_user.id):
         await callback.answer(
             "Только администратор может подтверждать заказы!", show_alert=True
         )
         return
-    photographer_user_id = callback.from_user.id
+    photographer_user_id = int(callback.from_user.id)
+    logger.info(f"ПОЛЬЗОВАТЕЛЬ: {photographer_user_id}")
     order_id = callback.data[14:]
-    order = get_order_by_id(order_id)
+    order = await get_order_by_id(int(order_id))
+    logger.info(f"ID: {order_id}")
     manager_id = order.get("manager_id") if order else None
 
-    update_order_status(order_id, "done")
+    await update_order_status(int(order_id), "done")
 
     await callback.answer(
         "✅ Заказ подтверждён! Статус изменён на 'Выполнен'.", show_alert=True
@@ -155,17 +157,19 @@ async def admin_confirm_order(callback: CallbackQuery, state: FSMContext):
     )
     allowed_groups = set(
         uid
-        for uid in (config.get_allowed_groups() or [])
+        for uid in (await config.get_allowed_groups() or [])
         if isinstance(uid, int)
     )
     targets_groups = [
             uid
             for uid in allowed_groups
         ]
-    order = get_order_by_id(order_id)
-    files = get_user_files(photographer_user_id, order_id)
-
-    checklist = get_checklist_answers(order_id)
+    files = await get_files_from_db(int(order_id))
+    # files = get_user_files(int(photographer_user_id), order_id)
+    logger.info(f"ID ФОТОГРАФА: {photographer_user_id}")
+    logger.info(f"ID ЗАКАЗА: {order_id}")
+    logger.info(f"ФАЙЛЫ ЕСТЬ ИЛИ НЕТ: {files}")
+    checklist = await get_checklist_answers(int(order_id))
 
     header_text = (
         f"<b>{order.get('brand', '')} {order.get('model', '')}</b>\n"
@@ -191,7 +195,7 @@ async def admin_confirm_order(callback: CallbackQuery, state: FSMContext):
         f"{q2_label}: {_fmt(cp2)}\n"
     )
     for uid in targets_groups:
-        thread_id = get_thread_information(uid)
+        thread_id = await get_thread_information(uid)
         try:
             await callback.bot.send_message(uid, header_text, parse_mode="HTML", message_thread_id=thread_id)
             if photos:
@@ -225,7 +229,7 @@ async def admin_confirm_order(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("admin_rework_"))
 async def admin_rework_order(callback: CallbackQuery, state: FSMContext):
-    if not is_admin(callback.from_user.id):
+    if not await is_admin(callback.from_user.id):
         await callback.answer(
             "Только администратор может отправлять заказы на доработку!",
             show_alert=True,
@@ -233,13 +237,13 @@ async def admin_rework_order(callback: CallbackQuery, state: FSMContext):
         return
 
     order_id = callback.data[13:]
-    order = get_order_by_id(order_id)
+    order = await get_checklist_answers(order_id)
 
     if not order:
         await callback.answer("Заказ не найден!", show_alert=True)
         return
 
-    update_order_status(order_id, "progress")
+    await update_order_status(order_id, "progress")
 
     photographer_id = order.get("manager_id")
     if photographer_id:

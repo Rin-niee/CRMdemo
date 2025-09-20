@@ -1,10 +1,21 @@
 from datetime import datetime, timedelta
-from aiogram.types import FSInputFile, InputMediaPhoto, InputMediaVideo
+from aiogram.types import FSInputFile, InputMediaPhoto, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaVideo
 import os
 import logging
 import config
 from handlers.common.constans import MAX_FILES_TO_SEND
-from utils.data import get_all_orders_by_status, get_checklist_answers, mark_order_as_shown
+from utils.data import(
+    get_all_orders_by_status,
+    get_checklist_answers,
+    mark_order_as_shown,
+    get_order_by_id,
+    get_progress_manager_ids,
+    get_open_orders_older_than,
+    get_dealer_by_id,
+    get_company_by_id,
+    get_thread_clients,
+    get_open_orders_with_opened_at,
+ )
 from utils.file_handler import (
     get_user_files,
     get_files_by_stage_summary,
@@ -12,24 +23,10 @@ from utils.file_handler import (
 import traceback
 from keyboards.inline import (
     get_orders_with_opened_keyboard,
+    get_admin_order_keyboard,
 )
+from crm_integration import push_notification_to_redis
 
-
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboards.inline import get_admin_order_keyboard
-from utils.data import (
-    get_order_by_id,
-)
-from utils.data import (
-    get_progress_manager_ids,
-    get_all_open_orders,
-    get_open_orders_older_than,
-    get_dealer_by_id,
-    get_company_by_id,
-    get_thread_information,
-    get_thread_clients,
-    get_open_orders_with_opened_at,
-)
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -44,7 +41,7 @@ async def notify_admin_manager_assignment(bot, order, manager_id: int):
         order: Данные заказа
         manager_id: ID менеджера, который взял заказ
     """
-    admin_id = config.get_admin_id()
+    admin_id = await config.get_admin_id()
     if not admin_id:
         return
     
@@ -74,8 +71,8 @@ async def notify_managers_order_opened(bot, order):
         order: Данные открытого заказа
     """
     try:
-        admin_id = config.get_admin_id()
-        allowed_users = config.get_allowed_users() or []
+        admin_id = await config.get_admin_id()
+        allowed_users = await config.get_allowed_users() or []
 
         # Фильтруем только валидные ID пользователей
         allowed_users = [
@@ -83,14 +80,14 @@ async def notify_managers_order_opened(bot, order):
         ]
 
         # Получаем ID менеджеров, у которых уже есть заказы в работе
-        active_progress_ids = set(get_progress_manager_ids())
+        active_progress_ids = set(await get_progress_manager_ids())
         
         # Формируем информацию о дилере
         dealer_text = ""
         dealer_id = order.get("dealers_id")
 
         if dealer_id:
-            dealer = get_dealer_by_id(dealer_id)
+            dealer = await get_dealer_by_id(dealer_id)
             if dealer:
                 parts = []
                 if dealer.get("name"):
@@ -144,7 +141,7 @@ async def notify_managers_order_opened(bot, order):
 
 async def reminder_job(bot):
     try:
-        open_orders = get_open_orders_older_than(60)
+        open_orders = await get_open_orders_older_than(60)
         if not open_orders:
             return
 
@@ -155,12 +152,12 @@ async def reminder_job(bot):
                 logger.info(f"reminder: order {order.get('id')} already shown, skipping")
                 continue
 
-            active_manager_ids = set(get_progress_manager_ids())
-            admin_id = config.get_admin_id()
+            active_manager_ids = set(await get_progress_manager_ids())
+            admin_id = await config.get_admin_id()
             allowed_users = set(
                 [
                     uid
-                    for uid in (config.get_allowed_users() or [])
+                    for uid in (await config.get_allowed_users() or [])
                     if isinstance(uid, int) and uid > 100000
                 ]
             )
@@ -174,7 +171,7 @@ async def reminder_job(bot):
 
             logger.info(f"open_orders: {dealer_id}")
             if dealer_id:
-                dealer = get_dealer_by_id(dealer_id)
+                dealer = await get_dealer_by_id(dealer_id)
                 logger.info(f"dealer: {dealer}")
                 if dealer:
                     photo = dealer.get("photo")
@@ -204,25 +201,24 @@ async def reminder_job(bot):
                     
             company_id = order.get("company_id")
             logger.info(f"open_orders: {dealer_text}")
-            if order.get("url"):
-                link_text = f"\n<b>🔗Ссылка на авто:</b> {order['url']}"
+            if order.get("url_users"):
+                link_text = f"\n<b>🔗Ссылка на авто:</b> {order['url_users']}"
             if company_id:
-                company = get_company_by_id(company_id)
+                company = await get_company_by_id(company_id)
                 if company:
-                    parts = [f"\n<b>🏢 Компания:</b>"]
-                    if company.get("name"):
-                        parts.append(f"Наименование: {company['name']}")
-                    if company.get("INN"):
-                        parts.append(f"ИНН: {company['INN']}")
-                    if company.get("OGRN"):
-                        parts.append(f"ОГРН: {company['OGRN']}")
-                    if company.get("address"):
-                        parts.append(f"Адрес:{company['address']}")
-                    if company.get("phone"):
-                        parts.append(f"Телефон:{company['phone']}")
-                    if company.get("email"):
-                        parts.append(f"E-mail: {company['email']}")
-                    company_text = "\n".join(parts)
+                    company_text = []
+                    company_text.append(
+                        "\n🏢<b> Компания: </b>\n" +
+                        "Наименование: " + (company.get("name") or "Неизвестно") +
+                        "\nИНН: " + (company.get("INN") or "Неизвестно") +
+                        "\nАдрес: " + (company.get("OGRN") or "Неизвестно") +
+                        "\nТелефон: " + (company.get("phone") or "Неизвестно") +
+                        "\nE-mail: " + (company.get("email") or "Неизвестно")
+                    )
+                else:
+                    company_text = ""
+            else:
+                company_text = ""
             order_brand = order.get('brand','')
             order_model = order.get('model','')
             order_year = order.get('year','')
@@ -239,11 +235,15 @@ async def reminder_job(bot):
                     details_list.append(f"{order_power} л.с.")
 
                 if details_list:
-                    text1 += "\n" + "  ".join(details_list) 
+                    text1 += "\n" + "  ".join(details_list)
+                if order.get("opened_at"):
+                    date = order.get('opened_at')
+                    formatted = date.strftime("%d.%m.%Y %H:%M:%S")
+                    date_create = f"<b>📅 Создан:</b> {formatted}\n"
             text = (
                 "🔔 <b>Открытый заказ ожидает осмотрщика</b>\n\n" + text1 +
-                f"🆔 Заказ: {order.get('id')}\n" +
-                f"📅 Создан: {order.get('opened_at')}\n" + link_text + '\n' + dealer_text + "\n" + company_text +
+                f"\n🆔 Заказ: {order.get('id')}\n" +
+                date_create + link_text + '\n' + dealer_text + "\n" + company_text +
  
                 "\n\nНажмите кнопку ниже, чтобы открыть заказ."
             )
@@ -259,7 +259,6 @@ async def reminder_job(bot):
             )
             for uid in targets:
                 try:
-                    #это код для добавления карточки дилера в заявку. Он еще в разработке и отключен временно.
                     if photo:
                         await bot.send_photo(
                         chat_id=uid,
@@ -279,7 +278,7 @@ async def reminder_job(bot):
                     )
                     continue
             try:
-                mark_order_as_shown(order.get("id"))
+                await mark_order_as_shown(order.get("id"))
                 logger.info(f"reminder: shown_to_bot set True for order {order.get('id')}")
             except Exception as e:
                 logger.error(f"reminder: failed to update shown_to_bot for order {order.get('id')}: {e}")
@@ -291,26 +290,32 @@ async def reminder_job(bot):
 async def notify_manager_departure(bot, order_id: int, manager_id: int, arrival_time: datetime):
     try:
         if isinstance(arrival_time, datetime):
-            arrival_time =  arrival_time + timedelta(hours=3)
-            arrival_str = arrival_time.strftime("%Y-%m-%d %H:%M")
-            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_str} (МСК)</b>."
+            arrival_time = arrival_time + timedelta(hours=3)
+            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет в <b>{arrival_time} (МСК)</b>."
         else: 
-            text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет более чем через 3 часа"
+            if manager_id != 'NULL':
+                text_manager = f"🚗 Менеджер <b>{manager_id}</b> отправился за заказом <b>{order_id}</b> и прибудет более чем через 3 часа"
         allowed_groups = set(
             uid
-            for uid in (config.get_allowed_groups() or [])
+            for uid in (await config.get_allowed_groups() or [])
             if isinstance(uid, int)
         )
 
         for uid in allowed_groups:
-            message_thread = get_thread_clients(uid)
+            message_thread = await get_thread_clients(uid)
             try:
                 await bot.send_message(uid, text_manager, parse_mode="HTML", message_thread_id=message_thread)
                 logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
             except Exception as e:
                 logger.error(f"reminder: failed to send manager info to {uid}: {e}")
                 continue
-
+        event = {
+            "type": "bids",
+            "title": "🚗 <b>Осмотрщик отправился за заказом</b>\n\n",
+            "text": text_manager,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        await push_notification_to_redis(event)
     except Exception as e:
         logger.error(f"notify_manager_departure error: {e}")
 
@@ -319,13 +324,20 @@ async def notify_manager_arrived(bot, order_id: int, manager_id: int):
     try:
         text_manager = f"📷 Осмотрщик <b>{manager_id}</b>, прикрепленный к заказу <b>{order_id}</b> прибыл на место и начал съемку авто."
 
+        event = {
+            "type": "bids",
+            "title": "🚗 <b>Осмотрщик прибыл на место съемки</b>\n\n",
+            "text": text_manager,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        await push_notification_to_redis(event)
         allowed_groups = set(
             uid
-            for uid in (config.get_allowed_groups() or [])
+            for uid in (await config.get_allowed_groups() or [])
             if isinstance(uid, int)
         )
         for uid in allowed_groups:
-            message_thread = get_thread_clients(uid)
+            message_thread = await get_thread_clients(uid)
             try:
                 await bot.send_message(uid, text_manager, parse_mode="HTML", message_thread_id=message_thread)
                 logger.info(f"reminder: sent manager info to {uid} for order {order_id}")
@@ -340,7 +352,7 @@ async def notify_manager_arrived(bot, order_id: int, manager_id: int):
 
 async def reminder_open_bids(bot):
     try:
-        open_orders = get_open_orders_older_than(60)
+        open_orders = await get_open_orders_older_than(60)
         count = len(open_orders)
         if not open_orders:
             return
@@ -349,19 +361,21 @@ async def reminder_open_bids(bot):
             f"🔔 Внимание! Есть открытые заявки.\n"
             f"Количество открытых заявок на сегодня: <b> {count} </b>"
         )
-        active_manager_ids = set(get_progress_manager_ids())
-        admin_id = config.get_admin_id()
+        active_manager_ids = set(await get_progress_manager_ids())
+        admin_id = await config.get_admin_id()
         allowed_users = set(
             uid
-            for uid in (config.get_allowed_users() or [])
+            for uid in (await config.get_allowed_users() or [])
             if isinstance(uid, int)
         )
+        logger.info(f"allowed_users {allowed_users}")
         targets = [
             uid
             for uid in allowed_users
             if uid and uid != admin_id and uid not in active_manager_ids
         ]
-        orders = get_open_orders_with_opened_at()
+        logger.info(f"LALALALA {targets}")
+        orders = await get_open_orders_with_opened_at()
 
         for uid in targets:
             try:
@@ -376,7 +390,7 @@ async def reminder_open_bids(bot):
 
 
 async def notify_admin_manager_decline(bot, order, manager_id: int, reason: str):
-    admin_id = config.get_admin_id()
+    admin_id = await config.get_admin_id()
     if not admin_id:
         return
     await bot.send_message(
@@ -386,10 +400,16 @@ async def notify_admin_manager_decline(bot, order, manager_id: int, reason: str)
             f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n"
             f"🆔 Заказ: {order.get('id')}\n"
             f"👤 Осмотрщик: {manager_id}\n"
-            f"📝 Причина: {reason or 'не указана'}"
         ),
         parse_mode="HTML",
     )
+    event = {
+        "type": "bids",
+        "title": "⚠️ <b>Осмотрщик отказался от заказа</b>\n\n",
+        "text": f"🚗 <b>{order.get('brand','')} {order.get('model','')}</b>\n🆔 Заказ: {order.get('id')}\n👤 Осмотрщик: {manager_id}\n",
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    await push_notification_to_redis(event)
 
 
 async def send_files_to_admin(
@@ -397,11 +417,11 @@ async def send_files_to_admin(
 ):
     try:
         
-        admin_id = config.get_admin_id()
+        admin_id = await config.get_admin_id()
         if admin_id is None:
             logger.error("Админ не найден")
             return
-        order = get_order_by_id(order_id)
+        order = await get_order_by_id(int(order_id))
         files = get_user_files(photographer_user_id, order_id)
         if is_rework:
 
@@ -415,7 +435,7 @@ async def send_files_to_admin(
 
             files = [f for f in files if is_additional_file(f)]
 
-        checklist = get_checklist_answers(order_id)
+        checklist = await get_checklist_answers(int(order_id))
 
         prefix = (
             "🔄 <b>Заказ после доработки!</b>"
@@ -428,6 +448,21 @@ async def send_files_to_admin(
             f"\n👤 Фотограф ID: {photographer_user_id}\n"
             f"📁 Всего файлов: {len(files)}"
         )
+
+        note_text = (
+            f"<b>{order.get('brand', '')} {order.get('model', '')}</b>\n"
+            f"👤 Фотограф ID: {photographer_user_id}\n"
+            f"📁 Всего файлов: {len(files)}"
+        )
+
+        event = {
+            "type": "bids",
+            "title": prefix,
+            "text": note_text,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        await push_notification_to_redis(event)
+
         await bot.send_message(admin_id, header_text, parse_mode="HTML")
 
         photos = [f for f in files if f.get("type") == "photo"]
@@ -459,32 +494,20 @@ async def send_files_to_admin(
         )
         await bot.send_message(admin_id, checklist_text, parse_mode="HTML")
 
-        kb = get_admin_order_keyboard(str(order_id))
+        kb = get_admin_order_keyboard(int(order_id))
         action_text = (
             "Заказ после доработки - выберите действие:"
             if is_rework
             else "Выберите действие после проверки:"
         )
         await bot.send_message(admin_id, action_text, reply_markup=kb)
-
-        prefix_group = (
-            "🔄 <b>Информация по новому заказу после доработки!</b>"
-            if is_rework
-            else "🆕 <b>Информация по новому заказу!</b>"
-        )
-        header_text1 = (
-            f"{prefix_group}\n\n"
-            f"<b>{order.get('brand', '')} {order.get('model', '')}</b>\n"
-            f"\n👤 Фотограф ID: {photographer_user_id}\n"
-            f"📁 Всего файлов: {len(files)}"
-        )
     except Exception as e:
         logger.error(f"Ошибка отправки заказа админу: {e}")
 
 
 async def send_pending_orders_to_new_admin(bot, admin_id: int):
     try:
-        review_orders = get_all_orders_by_status(["review"])
+        review_orders = await get_all_orders_by_status(["review"])
 
         if not review_orders:
             await bot.send_message(admin_id, "📋 Нет заказов, ожидающих проверки.")

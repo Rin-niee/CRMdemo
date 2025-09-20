@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from typing import Optional, Dict
 import logging
@@ -30,7 +31,7 @@ def get_next_stage(current_state) -> Optional[Dict]:
     return None
 
 
-def build_order_info_text(order: Dict) -> str:
+async def build_order_info_text(order: Dict) -> str:
     info_parts =[]
     order_brand = order.get('brand','')
     order_model = order.get('model','')
@@ -54,11 +55,14 @@ def build_order_info_text(order: Dict) -> str:
     if order.get("url"):
         info_parts.append(f"\n<b>🔗Ссылка на авто:</b> {order['url']}")
     if order.get("opened_at"):
-        info_parts.append(f"\n<b>📅 Создан:</b> {order.get('opened_at')}")
+        date = order.get('opened_at')
+        # date_data = datetime.fromisoformat(date) 
+        formatted = date.strftime("%d.%m.%Y %H:%M:%S")
+        info_parts.append(f"\n<b>📅 Создан:</b> {formatted}")
 
     dealer_id = order.get("dealer_id")
     if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
+        dealer = await get_dealer_by_id(dealer_id)
         logger.info(f"dealer: {dealer}")
         if dealer:
             parts = []
@@ -77,6 +81,7 @@ def build_order_info_text(order: Dict) -> str:
             if dealer.get("address"):
                 if str(dealer["address"]).strip() not in ("", "0", None):
                     parts.append(str(dealer["address"]))
+            photo_obj = None 
             dealer_photo = dealer.get("photo")
             if dealer_photo:
                 local_path = os.path.join("/usr/src/app/storage", dealer_photo)
@@ -86,44 +91,15 @@ def build_order_info_text(order: Dict) -> str:
                 info_parts.append("\n<b>👨‍💻 Дилер:</b>\n" + "\n".join(parts))
     company_id = order.get("company_id")
     if company_id:
-        company = get_company_by_id(company_id)
+        company = await get_company_by_id(company_id)
         if company:
             info_parts.append(
                 "\n🏢<b> Компания: </b>\n" +
-                "Наименование: "
-                + "".join(
-                    [
-                        company.get("name", "Неизвестно"),
-                    ]
-                )
-                +
-                "\nИНН: "
-                + "".join(
-                    [
-                        company.get("INN", "Неизвестно"),
-                    ]
-                )
-                +
-                "\nАдрес: "
-                + "".join(
-                    [
-                        company.get("OGRN", "Неизвестно"),
-                    ]
-                )
-                +
-                "\nТелефон: "
-                + "".join(
-                    [
-                        company.get("phone", "Неизвестно"),
-                    ]
-                )
-                +
-                "\nE-mai: "
-                + "".join(
-                    [
-                        company.get("email", "Неизвестно"),
-                    ]
-                )
+                "Наименование: " + (company.get("name") or "Неизвестно") +
+                "\nИНН: " + (company.get("INN") or "Неизвестно") +
+                "\nАдрес: " + (company.get("OGRN") or "Неизвестно") +
+                "\nТелефон: " + (company.get("phone") or "Неизвестно") +
+                "\nE-mail: " + (company.get("email") or "Неизвестно")
             )
 
     info_parts.append("\nГотовы начать съемку автомобиля?")

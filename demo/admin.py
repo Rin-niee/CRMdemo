@@ -135,12 +135,12 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(bid)
 class BidAdmin(admin.ModelAdmin):
-    list_display = ('id', 'company', 'brand', 'model', 'year', 'status', 'dealer', 'photos_preview')
+    list_display = ('id', 'company', 'brand', 'model', 'year', 'status', 'dealer', 'photos_preview', 'thread_id')
     search_fields = ('brand', 'model', 'user__username', 'company__name', 'dealer__name')
     list_filter = ('status', 'company', 'dealer')
     ordering = ('-id',)
-    exclude = ('user', 'manager', 'opened_at', 'arrived_time', 'deadline')
-    readonly_fields = ('company','photos_preview', 'checklist_point1','checklist_point2')
+    exclude = ('user', 'manager', 'opened_at', 'deadline')
+    readonly_fields = ('company','photos_preview', 'checklist_point1','checklist_point2', 'arrived_time')
 
     def save_model(self, request, obj, form, change):
         if obj.status == "open" and not obj.opened_at:
@@ -171,6 +171,17 @@ class user_companyAdmin(admin.ModelAdmin):
 @admin.register(Groups)
 class GroupsAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    pass
+
+
+
+@admin.register(ChatMedia)
+class ChatMediaAdmin(admin.ModelAdmin):
+    pass
+
 
 admin.site.site_header = "CRM Demo - Администрирование"
 admin.site.site_title = "CRM Demo"

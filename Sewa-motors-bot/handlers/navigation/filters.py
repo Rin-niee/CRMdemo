@@ -33,9 +33,9 @@ async def filter_orders_by_status(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
 
     if status == "open":
-        orders = get_all_open_orders_for_me(user_id)
+        orders = await get_all_open_orders_for_me(user_id)
     else:
-        orders = get_orders_by_status(user_id, [status])
+        orders = await get_orders_by_status(user_id, [status])
 
     status_names = {
         "open": "Открытые",
@@ -63,7 +63,7 @@ async def filter_orders_by_status(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "back_to_status_filter")
 async def back_to_status_menu(callback: CallbackQuery):
-    await callback.message.edit_text(
+    await callback.message.answer(
         "Выберите статус заказов:", reply_markup=get_order_status_keyboard()
     )
     await callback.answer()
@@ -104,15 +104,14 @@ async def set_arrival_time(callback: CallbackQuery, state: FSMContext):
     if choice != "more":
         minutes = int(choice)
         arrival_time = now + timedelta(minutes=minutes)
-        note = arrival_time.strftime("%H:%M")
-        save_arrival_time(order_id, arrival_time, manager_id, status="progress")
+        note = arrival_time.strftime("%Y-%m-%d %H:%M")
     else:
+        arrival_time = None
         note = "более 3 часов"
-        save_arrival_time(order_id, None, manager_id, status="progress")
-
+    await save_arrival_time(order_id, arrival_time, manager_id, status="progress")
     await callback.message.edit_reply_markup(None)
 
-    order = get_order_by_id(order_id)
+    order = await get_order_by_id(order_id)
     if order:
         await state.update_data(selected_order=order_id)
         await show_order_info(callback, order, state)
@@ -131,7 +130,7 @@ async def order_details_from_status(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Неверный идентификатор заказа.", show_alert=True)
         return
 
-    order = get_order_by_id(order_id)
+    order = await get_order_by_id(order_id)
     if not order:
         await callback.answer("Заказ не найден.", show_alert=True)
         return
@@ -164,7 +163,7 @@ async def back_to_notification(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
         return
 
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
 
     if not order:
         await callback.answer("Заказ не найден.", show_alert=True)
@@ -174,7 +173,7 @@ async def back_to_notification(callback: CallbackQuery, state: FSMContext):
     dealer_id = order.get("dealers_id")
 
     if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
+        dealer = await get_dealer_by_id(dealer_id)
         
         if dealer:
             parts = []

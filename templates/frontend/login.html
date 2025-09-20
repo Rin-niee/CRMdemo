@@ -122,7 +122,6 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Логин
 document.getElementById('login-form').addEventListener("submit", async function(e) {
     e.preventDefault();
 
@@ -140,14 +139,13 @@ document.getElementById('login-form').addEventListener("submit", async function(
             "X-CSRFToken": csrfToken
         },
         body: JSON.stringify(data),
-        credentials: "include" // важно, чтобы куки сохранились
+        credentials: "include"
     });
 
     const result = await response.json();
 
     if (response.ok) {
         alert("Вход выполнен успешно!");
-        // Получаем текущего пользователя сразу после входа
         fetchCurrentUser();
         window.location.href = "/";
 
@@ -156,15 +154,13 @@ document.getElementById('login-form').addEventListener("submit", async function(
     }
 });
 
-// Функция для получения текущего пользователя
 async function fetchCurrentUser() {
     const response = await fetch("/api/current_user/", {
         method: "GET",
-        credentials: "include" // обязательно
+        credentials: "include"
     });
     if (response.ok) {
         const data = await response.json();
-        // Выводим имя пользователя и роль где нужно, например в верхний div
         const userDiv = document.getElementById("current-user");
         if (userDiv) {
             userDiv.textContent = `Вы авторизованы как ${data.username} (${data.role})`;
@@ -173,8 +169,6 @@ async function fetchCurrentUser() {
         console.log("Не удалось получить текущего пользователя");
     }
 }
-
-// Можно вызвать при загрузке страницы, чтобы сразу проверить, залогинен ли кто-то
 window.addEventListener("load", fetchCurrentUser);
 </script>
 

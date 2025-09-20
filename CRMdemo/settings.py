@@ -26,9 +26,10 @@ SECRET_KEY = 'django-insecure-lx5o9eu@0pj$w#d@6ex_j!u96+@(t=z$w%889psqj8j!4nj82@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '188.225.86.79']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '188.225.86.79', "web"]
 
-
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 # Application definition
 
 INSTALLED_APPS = [
@@ -96,11 +97,14 @@ WSGI_APPLICATION = 'CRMdemo.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'crm_db',
+        'USER': 'crm_user',
+        'PASSWORD': 'securepassword',
+        'HOST': 'db',
+        'PORT': '5432',
     }
 }
-
 AUTH_USER_MODEL = "demo.User" 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

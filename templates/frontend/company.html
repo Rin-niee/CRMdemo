@@ -198,8 +198,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const response = await fetch(`/api/company/${pk}/`);
     const order = await response.json();
-
-    // Заполняем детали компании
     document.getElementById("name").textContent = order.name;
     document.getElementById("INN").textContent = order.INN;
     document.getElementById("adress").textContent = order.adress;
@@ -222,8 +220,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         row.appendChild(label);
         row.appendChild(value);
-
-        // Крестик для удаления, если текущий пользователь owner и это не он сам
         if(order.current_user_role === 'owner' && emp.id !== order.current_user_id) {
             const removeBtn = document.createElement("button");
             removeBtn.textContent = '❌';

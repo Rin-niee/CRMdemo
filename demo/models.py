@@ -109,9 +109,10 @@ class Order(models.Model):
         verbose_name_plural = "Заказы"
 
 class Groups(models.Model):
-    tg_id=models.IntegerField()
+    tg_id=models.BigIntegerField()
     inspection_id = models.IntegerField()
     clients_id = models.IntegerField()
+    calls_id = models.IntegerField()
     class Meta:
         db_table = "groups"
         verbose_name = "Группа"
@@ -120,6 +121,7 @@ class Groups(models.Model):
 class TGUsers(models.Model):
     id = models.BigIntegerField(primary_key=True,verbose_name="ID пользователя в телеграм")
     is_admin = models.BooleanField(default=0)
+    is_caller = models.BooleanField(default=0)
     group = models.ForeignKey(Groups, on_delete=models.CASCADE, null=True, blank = True)
     class Meta:
         db_table = "users"
@@ -147,7 +149,7 @@ class bid(models.Model):
         ('disable', 'Disable'),
         ('open', 'Open'),
     ]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Пользователь")
     company = models.ForeignKey(Companies, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Компания")
 
     brand = models.CharField(max_length=100, blank=True, null=True, verbose_name="Бренд")
@@ -168,14 +170,17 @@ class bid(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disable', verbose_name="Статус заявки")
     manager = models.ForeignKey(TGUsers, on_delete=models.CASCADE, blank=True, null=True)
     deadline = models.DateTimeField(blank=True, null=True, verbose_name="Исполняющий менеджер")
-    url_users =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Исходная ссылка на авто")
-    url =  models.CharField(max_length=100, blank=True, null=True, verbose_name="Конечная ссылка на авто")
+    url_users =  models.CharField(max_length=500, blank=True, null=True, verbose_name="Исходная ссылка на авто")
+    url =  models.CharField(max_length=500, blank=True, null=True, verbose_name="Конечная ссылка на авто")
     dealer = models.ForeignKey(Dealers, on_delete=models.CASCADE, blank=True, null=True, verbose_name="Дилер")
     opened_at = models.DateTimeField(blank=True, null=True)
     arrived_time = models.DateTimeField(blank=True, null=True)
+    thread_id = models.BigIntegerField(blank=True, null=True)
     checklist_point1 = models.CharField(max_length=100, null=True, blank=True, verbose_name="Состояние бампера")
     checklist_point2 = models.CharField(max_length=100, null=True, blank=True, verbose_name="Уровень топлива в баке")
     shown_to_bot = models.BooleanField(default=False, verbose_name="Уведомление боту показано")
+    in_stock = models.BooleanField(default=False, verbose_name="Авто в наличии")
+    caller_saw = models.BooleanField(default=False, verbose_name="Отправлено в чат просмотрщиков")
     class Meta:
         db_table = "bid"
         verbose_name = "Заявка"
@@ -193,4 +198,22 @@ class CarsPhoto(models.Model):
         verbose_name = "Фото"
         verbose_name_plural = "Фото"
 
+class ChatMessage(models.Model):
+    bid = models.ForeignKey(bid, on_delete=models.CASCADE)
+    chat_id = models.BigIntegerField()
+    message_thread_id = models.BigIntegerField()
+    message_id = models.BigIntegerField()
+    user_id = models.BigIntegerField()
+    username = models.CharField(max_length=255, blank=True)
+    topic_name = models.CharField(max_length=255, blank=True)
+    text = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    to_bot = models.BooleanField(default=False)
+
+#хранение файлов из сообщений
+class ChatMedia(models.Model):
+    message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, related_name='media')
+    file_type = models.CharField(max_length=20)
+    file_url = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 

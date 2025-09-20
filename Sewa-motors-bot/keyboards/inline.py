@@ -12,9 +12,9 @@ def get_main_menu_keyboard():
     )
 
 
-def get_help_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    open_orders = get_open_orders_older_than(60)
-    my_orders = get_my_order(user_id)
+async def get_help_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    open_orders = await get_open_orders_older_than(60)
+    my_orders = await get_my_order(user_id)
     count = len(open_orders)
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -28,8 +28,8 @@ def get_help_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     )
 
 
-def get_companies_keyboard():
-    companies = get_companies()
+async def get_companies_keyboard():
+    companies = await get_companies()
     buttons = [
         [InlineKeyboardButton(text=company["name"], callback_data=f"company_{company['id']}")]
         for company in companies

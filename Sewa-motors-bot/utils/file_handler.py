@@ -3,10 +3,14 @@ from datetime import datetime
 from config import STORAGE_PATH
 from handlers.common.constans import PHOTO_STAGES
 from utils.data import (
-    insert_file_record
+    get_order_by_id,
+    insert_file_record,
+    get_photo_by_bid_id,
 )
-
-
+from aiogram.types import FSInputFile
+import logging
+import os
+logger = logging.getLogger(__name__)
 async def save_file_with_stage(bot, file_id: str, user_id: int, order_id, stage_title: str, file_name: str = None):
     try:
         if not all([bot, file_id, user_id is not None, order_id is not None, stage_title]):
@@ -21,7 +25,7 @@ async def save_file_with_stage(bot, file_id: str, user_id: int, order_id, stage_
         stage_prefix = _stage_prefix(stage_title)
         file_path = os.path.join(order_folder, f"{stage_prefix}_{datetime.now().strftime('%H%M%S')}_{file_name}")
         relative_file_path = os.path.relpath(file_path, start='storage')
-        insert_file_record(order_id, relative_file_path)
+        await insert_file_record(order_id, relative_file_path)
         await bot.download_file(file.file_path, file_path)
         
         return True, file_path
@@ -123,8 +127,36 @@ def get_user_files(user_id: int, order_id=None):
                     })
         return files
     except Exception as e:
+        logger.error(f"get_user_files error: {e}")
         return []
 
+async def get_files_from_db(bid_id: int):
+    photos = await get_photo_by_bid_id(bid_id)
+    files = []
+
+    for photo in photos:
+        file_url = photo.get("file_url")
+        if not file_url:
+            continue
+
+        local_path = os.path.join("/usr/src/app/storage", file_url)
+        if not os.path.exists(local_path):
+            continue
+
+        ext = os.path.splitext(local_path)[1].lower()
+        if ext in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+            file_type = "photo"
+        elif ext in [".mp4", ".mov", ".avi", ".mkv"]:
+            file_type = "video"
+        else:
+            continue
+
+        files.append({
+            "type": file_type,
+            "path": local_path
+        })
+
+    return files
 
 def get_files_by_stage_summary(user_id: int, order_id):
     try:

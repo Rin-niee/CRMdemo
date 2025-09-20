@@ -8,7 +8,7 @@ def require_admin(func):
     async def wrapper(event, *args, **kwargs):
         user_id = event.from_user.id
 
-        if not config.is_admin(user_id):
+        if not await config.is_admin(user_id):
             message = "❌ Требуются права администратора"
 
             if hasattr(event, "data"):

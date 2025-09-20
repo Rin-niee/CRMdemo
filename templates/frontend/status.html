@@ -116,23 +116,20 @@
     container.innerHTML = "";
 
     const workflowSteps = [
-        {key: "payment_doc", label: "Оплата"},
-        {key: "parking_doc", label: "Прибытие авто на парковку"},
-        {key: "preparation_doc", label: "Подготовка к экспорту"},
-        {key: "bill_of_lading_doc", label: "Имя для коносамента"},
-        {key: "port_transport_doc", label: "Транспортировка в порт"},
-        {key: "port_arrival_doc", label: "Прибытие в порт"},
+        {key: "payment_doc", label: "Бронирование"},
+        {key: "parking_doc", label: "Выкуп авто"},
+        {key: "preparation_doc", label: "Прибытие на парковку"},
+        {key: "bill_of_lading_doc", label: "Погрузка"},
+        // {key: "port_transport_doc", label: "Транспортировка в порт"},
+        // {key: "port_arrival_doc", label: "Прибытие в порт"},
         {key: "order_received_doc", label: "Заказ получен"}
     ];
 
     workflowSteps.forEach(step => {
         const hasFile = statusData.files.some(f => f.doc_type + '_doc' === step.key);
         const fileInfo = statusData.files.find(f => f.doc_type + '_doc' === step.key);
-
         const div = document.createElement("div");
         div.className = "status-item";
-
-        // Создаем контейнер для названия и даты
         const infoContainer = document.createElement("div");
         infoContainer.style.cssText = "display: flex; flex-direction: column; gap: 5px;";
 
@@ -140,8 +137,6 @@
         span.className = "status-name";
         span.textContent = step.label + (hasFile ? " ✅" : "");
         infoContainer.appendChild(span);
-
-        // Добавляем дату загрузки под заголовком, если документ загружен
         if (hasFile && fileInfo && fileInfo.uploaded_at) {
             const dateSpan = document.createElement("span");
             dateSpan.style.cssText = "color: #666; font-size: 0.9rem;";

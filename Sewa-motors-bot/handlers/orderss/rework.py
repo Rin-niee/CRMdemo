@@ -23,7 +23,7 @@ router = Router()
 @router.callback_query(F.data.startswith("continue_order_"))
 async def continue_order(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data[15:]
-    order = get_order_by_id(int(order_id))
+    order = await get_order_by_id(int(order_id))
 
     if not order:
         await callback.answer("Заказ не найден!", show_alert=True)
@@ -54,7 +54,7 @@ async def continue_order(callback: CallbackQuery, state: FSMContext):
     dealer_text = ""
     dealer_id = order.get("dealers_id")
     if dealer_id:
-        dealer = get_dealer_by_id(dealer_id)
+        dealer = await get_dealer_by_id(dealer_id)
         if dealer:
             parts = []
             if dealer.get("name"):
@@ -117,7 +117,7 @@ async def finish_rework(callback: CallbackQuery, state: FSMContext):
 
     await send_files_to_admin(selected_order, user_id, callback.bot, is_rework=True)
 
-    update_order_status(str(selected_order), "review")
+    await update_order_status(str(selected_order), "review")
 
     await state.clear()
 

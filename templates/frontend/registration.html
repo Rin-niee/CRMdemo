@@ -167,7 +167,7 @@ document.getElementById('register-form').addEventListener("submit", async functi
 
     if (response.ok) {
         alert("Регистрация прошла успешно!");
-        window.location.href = "/login/";  // или куда хочешь
+        window.location.href = "/login/";
     } else {
         alert("Ошибка: " + JSON.stringify(result));
     }

@@ -28,7 +28,7 @@ async def welcome_command(message: Message, state: FSMContext):
     """
     try:
         # Создаем запись пользователя в БД если её нет
-        ensure_user_exists(message.from_user.id)
+        await ensure_user_exists(message.from_user.id)
     except Exception:
         # Игнорируем ошибки при создании пользователя
         pass
@@ -37,7 +37,7 @@ async def welcome_command(message: Message, state: FSMContext):
     await state.clear()
     
     # Отправляем приветственное сообщение с клавиатурой помощи
-    await message.answer(MESSAGES["welcome"], reply_markup=get_help_menu_keyboard(message.from_user.id))
+    await message.answer(MESSAGES["welcome"], reply_markup=await get_help_menu_keyboard(message.from_user.id))
 
 
 @router.message(Command("menu"))
@@ -65,5 +65,5 @@ async def menu_command(message: Message, state: FSMContext):
     # Отправляем сообщение с выбором компании
     await message.answer(
         "Чтобы перейти к заказам, выберите компанию:",
-        reply_markup=get_companies_keyboard(),
+        reply_markup=await get_companies_keyboard(),
     )
