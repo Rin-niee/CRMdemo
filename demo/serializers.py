@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from .models import *
 from collections import defaultdict
@@ -35,9 +36,6 @@ class OrdersSerializer(serializers.ModelSerializer):
         return order
 
 
-<<<<<<< Updated upstream
-
-=======
 class BidsSerializer(serializers.ModelSerializer):
     # user = serializers.PrimaryKeyRelatedField(
     #     queryset=User.objects.all(), required=False
@@ -155,9 +153,4 @@ class GroupedChatMessageSerializer(serializers.Serializer):
                 "created_at": m.created_at.isoformat(),
                 "media": media_serialized
             })
-<<<<<<< Updated upstream
         return grouped
->>>>>>> Stashed changes
-=======
-        return grouped
->>>>>>> Stashed changes
